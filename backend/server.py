@@ -1,72 +1,448 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
+from typing import List, Optional
 from datetime import datetime, timezone
 
+from models import (
+    User, UserCreate, UserLogin, UserResponse,
+    Cliente, ClienteCreate,
+    Peca, PecaCreate,
+    Funcionario, FuncionarioCreate,
+    Motorista, MotoristaCreate,
+    TabelaPreco, TabelaPrecoCreate,
+    OrdemServico, OrdemServicoCreate,
+    Orcamento, OrcamentoCreate,
+    Romaneio, RomaneioCreate
+)
+from auth import hash_password, verify_password, create_access_token, get_current_user, require_role
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
+app = FastAPI(title="Oficina Reis API")
 api_router = APIRouter(prefix="/api")
 
-
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+# ========== AUTH ROUTES ==========
+@api_router.post("/auth/register", response_model=UserResponse)
+async def register(user_data: UserCreate):
+    existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
     
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+    user = User(
+        nome=user_data.nome,
+        email=user_data.email,
+        senha_hash=hash_password(user_data.senha),
+        role=user_data.role
+    )
+    doc = user.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.users.insert_one(doc)
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    return UserResponse(
+        id=user.id,
+        nome=user.nome,
+        email=user.email,
+        role=user.role,
+        ativo=user.ativo
+    )
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin):
+    user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
+    if not user or not verify_password(credentials.senha, user["senha_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou senha inválidos")
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    if not user.get("ativo", True):
+        raise HTTPException(status_code=403, detail="Usuário inativo")
     
-    return status_checks
+    token = create_access_token(data={"sub": user["id"], "email": user["email"], "role": user["role"]})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": UserResponse(
+            id=user["id"],
+            nome=user["nome"],
+            email=user["email"],
+            role=user["role"],
+            ativo=user["ativo"]
+        )
+    }
 
-# Include the router in the main app
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return UserResponse(**user)
+
+# ========== DASHBOARD ROUTES ==========
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    total_os = await db.ordens_servico.count_documents({})
+    os_andamento = await db.ordens_servico.count_documents({"status": "andamento"})
+    os_concluidas = await db.ordens_servico.count_documents({"status": "concluido"})
+    total_clientes = await db.clientes.count_documents({})
+    
+    pipeline_faturamento = [
+        {"$match": {"status": "concluido"}},
+        {"$group": {"_id": None, "total": {"$sum": "$valor_total"}}}
+    ]
+    result = await db.ordens_servico.aggregate(pipeline_faturamento).to_list(1)
+    faturamento_mes = result[0]["total"] if result else 0.0
+    
+    return {
+        "total_os": total_os,
+        "os_andamento": os_andamento,
+        "os_concluidas": os_concluidas,
+        "total_clientes": total_clientes,
+        "faturamento_mes": round(faturamento_mes, 2)
+    }
+
+@api_router.get("/dashboard/alerts")
+async def get_dashboard_alerts(current_user: dict = Depends(get_current_user)):
+    pecas_baixo_estoque = await db.pecas.find(
+        {"$expr": {"$lte": ["$quantidade", "$quantidade_minima"]}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    orcamentos_pendentes = await db.orcamentos.count_documents({"status": "pendente"})
+    
+    return {
+        "pecas_baixo_estoque": pecas_baixo_estoque,
+        "orcamentos_pendentes": orcamentos_pendentes
+    }
+
+@api_router.get("/dashboard/recent-os")
+async def get_recent_os(current_user: dict = Depends(get_current_user)):
+    os_list = await db.ordens_servico.find({}, {"_id": 0}).sort("criado_em", -1).limit(10).to_list(10)
+    return os_list
+
+# ========== CLIENTES ROUTES ==========
+@api_router.post("/clientes", response_model=Cliente)
+async def create_cliente(data: ClienteCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    cliente = Cliente(**data.model_dump())
+    doc = cliente.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.clientes.insert_one(doc)
+    return cliente
+
+@api_router.get("/clientes", response_model=List[Cliente])
+async def list_clientes(
+    search: Optional[str] = Query(None),
+    tipo: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"nome": {"$regex": search, "$options": "i"}},
+            {"cpf_cnpj": {"$regex": search, "$options": "i"}}
+        ]
+    if tipo:
+        query["tipo"] = tipo
+    
+    clientes = await db.clientes.find(query, {"_id": 0}).to_list(1000)
+    for c in clientes:
+        if isinstance(c.get('criado_em'), str):
+            c['criado_em'] = datetime.fromisoformat(c['criado_em'])
+    return clientes
+
+@api_router.get("/clientes/{cliente_id}", response_model=Cliente)
+async def get_cliente(cliente_id: str, current_user: dict = Depends(get_current_user)):
+    cliente = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    if isinstance(cliente.get('criado_em'), str):
+        cliente['criado_em'] = datetime.fromisoformat(cliente['criado_em'])
+    return Cliente(**cliente)
+
+@api_router.put("/clientes/{cliente_id}", response_model=Cliente)
+async def update_cliente(cliente_id: str, data: ClienteCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    existing = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    update_data = data.model_dump()
+    await db.clientes.update_one({"id": cliente_id}, {"$set": update_data})
+    
+    updated = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+    if isinstance(updated.get('criado_em'), str):
+        updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
+    return Cliente(**updated)
+
+@api_router.delete("/clientes/{cliente_id}")
+async def delete_cliente(cliente_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.clientes.delete_one({"id": cliente_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return {"message": "Cliente deletado com sucesso"}
+
+# ========== PEÇAS ROUTES ==========
+@api_router.post("/pecas", response_model=Peca)
+async def create_peca(data: PecaCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    peca = Peca(**data.model_dump())
+    doc = peca.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.pecas.insert_one(doc)
+    return peca
+
+@api_router.get("/pecas", response_model=List[Peca])
+async def list_pecas(
+    search: Optional[str] = Query(None),
+    tipo: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"nome": {"$regex": search, "$options": "i"}},
+            {"codigo": {"$regex": search, "$options": "i"}}
+        ]
+    if tipo:
+        query["tipo"] = tipo
+    
+    pecas = await db.pecas.find(query, {"_id": 0}).to_list(1000)
+    for p in pecas:
+        if isinstance(p.get('criado_em'), str):
+            p['criado_em'] = datetime.fromisoformat(p['criado_em'])
+    return pecas
+
+@api_router.get("/pecas/{peca_id}", response_model=Peca)
+async def get_peca(peca_id: str, current_user: dict = Depends(get_current_user)):
+    peca = await db.pecas.find_one({"id": peca_id}, {"_id": 0})
+    if not peca:
+        raise HTTPException(status_code=404, detail="Peça não encontrada")
+    if isinstance(peca.get('criado_em'), str):
+        peca['criado_em'] = datetime.fromisoformat(peca['criado_em'])
+    return Peca(**peca)
+
+@api_router.put("/pecas/{peca_id}", response_model=Peca)
+async def update_peca(peca_id: str, data: PecaCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    existing = await db.pecas.find_one({"id": peca_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Peça não encontrada")
+    
+    update_data = data.model_dump()
+    await db.pecas.update_one({"id": peca_id}, {"$set": update_data})
+    
+    updated = await db.pecas.find_one({"id": peca_id}, {"_id": 0})
+    if isinstance(updated.get('criado_em'), str):
+        updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
+    return Peca(**updated)
+
+@api_router.delete("/pecas/{peca_id}")
+async def delete_peca(peca_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.pecas.delete_one({"id": peca_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Peça não encontrada")
+    return {"message": "Peça deletada com sucesso"}
+
+# ========== FUNCIONÁRIOS ROUTES ==========
+@api_router.post("/funcionarios", response_model=Funcionario)
+async def create_funcionario(data: FuncionarioCreate, current_user: dict = Depends(require_role(["admin"]))):
+    funcionario = Funcionario(**data.model_dump())
+    doc = funcionario.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.funcionarios.insert_one(doc)
+    return funcionario
+
+@api_router.get("/funcionarios", response_model=List[Funcionario])
+async def list_funcionarios(current_user: dict = Depends(get_current_user)):
+    funcionarios = await db.funcionarios.find({"ativo": True}, {"_id": 0}).to_list(1000)
+    for f in funcionarios:
+        if isinstance(f.get('criado_em'), str):
+            f['criado_em'] = datetime.fromisoformat(f['criado_em'])
+    return funcionarios
+
+@api_router.get("/funcionarios/{funcionario_id}", response_model=Funcionario)
+async def get_funcionario(funcionario_id: str, current_user: dict = Depends(get_current_user)):
+    funcionario = await db.funcionarios.find_one({"id": funcionario_id}, {"_id": 0})
+    if not funcionario:
+        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+    if isinstance(funcionario.get('criado_em'), str):
+        funcionario['criado_em'] = datetime.fromisoformat(funcionario['criado_em'])
+    return Funcionario(**funcionario)
+
+@api_router.put("/funcionarios/{funcionario_id}", response_model=Funcionario)
+async def update_funcionario(funcionario_id: str, data: FuncionarioCreate, current_user: dict = Depends(require_role(["admin"]))):
+    existing = await db.funcionarios.find_one({"id": funcionario_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+    
+    update_data = data.model_dump()
+    await db.funcionarios.update_one({"id": funcionario_id}, {"$set": update_data})
+    
+    updated = await db.funcionarios.find_one({"id": funcionario_id}, {"_id": 0})
+    if isinstance(updated.get('criado_em'), str):
+        updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
+    return Funcionario(**updated)
+
+# ========== MOTORISTAS ROUTES ==========
+@api_router.post("/motoristas", response_model=Motorista)
+async def create_motorista(data: MotoristaCreate, current_user: dict = Depends(require_role(["admin"]))):
+    motorista = Motorista(**data.model_dump())
+    doc = motorista.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.motoristas.insert_one(doc)
+    return motorista
+
+@api_router.get("/motoristas", response_model=List[Motorista])
+async def list_motoristas(current_user: dict = Depends(get_current_user)):
+    motoristas = await db.motoristas.find({"ativo": True}, {"_id": 0}).to_list(1000)
+    for m in motoristas:
+        if isinstance(m.get('criado_em'), str):
+            m['criado_em'] = datetime.fromisoformat(m['criado_em'])
+    return motoristas
+
+# ========== TABELA PREÇO ROUTES ==========
+@api_router.post("/tabela-precos", response_model=TabelaPreco)
+async def create_tabela_preco(data: TabelaPrecoCreate, current_user: dict = Depends(require_role(["admin"]))):
+    tabela = TabelaPreco(**data.model_dump())
+    doc = tabela.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.tabela_precos.insert_one(doc)
+    return tabela
+
+@api_router.get("/tabela-precos", response_model=List[TabelaPreco])
+async def list_tabela_precos(current_user: dict = Depends(get_current_user)):
+    tabelas = await db.tabela_precos.find({"ativo": True}, {"_id": 0}).to_list(1000)
+    for t in tabelas:
+        if isinstance(t.get('criado_em'), str):
+            t['criado_em'] = datetime.fromisoformat(t['criado_em'])
+    return tabelas
+
+# ========== ORDENS DE SERVIÇO ROUTES ==========
+@api_router.post("/ordens-servico", response_model=OrdemServico)
+async def create_os(data: OrdemServicoCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    cliente = await db.clientes.find_one({"id": data.cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    valor_servicos = sum(s.valor for s in data.servicos)
+    valor_pecas = sum(p.valor_total for p in data.pecas)
+    
+    if data.desconto_tipo == "percentual":
+        valor_desconto = (valor_servicos + valor_pecas) * (data.desconto_valor / 100)
+    else:
+        valor_desconto = data.desconto_valor
+    
+    valor_total = valor_servicos + valor_pecas - valor_desconto
+    
+    os = OrdemServico(
+        numero_fisico=data.numero_fisico,
+        cliente_id=data.cliente_id,
+        cliente_nome=cliente["nome"],
+        veiculo_tipo=data.veiculo_tipo,
+        veiculo_modelo=data.veiculo_modelo,
+        veiculo_serie=data.veiculo_serie,
+        categoria=data.categoria,
+        servicos=[s.model_dump() for s in data.servicos],
+        pecas=[p.model_dump() for p in data.pecas],
+        desconto_tipo=data.desconto_tipo,
+        desconto_valor=data.desconto_valor,
+        valor_servicos=valor_servicos,
+        valor_pecas=valor_pecas,
+        valor_desconto=valor_desconto,
+        valor_total=valor_total
+    )
+    
+    for peca in data.pecas:
+        await db.pecas.update_one(
+            {"id": peca.peca_id},
+            {"$inc": {"quantidade": -peca.quantidade}}
+        )
+    
+    doc = os.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.ordens_servico.insert_one(doc)
+    return os
+
+@api_router.get("/ordens-servico", response_model=List[OrdemServico])
+async def list_os(
+    status: Optional[str] = Query(None),
+    cliente_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if cliente_id:
+        query["cliente_id"] = cliente_id
+    
+    os_list = await db.ordens_servico.find(query, {"_id": 0}).sort("criado_em", -1).to_list(1000)
+    for os in os_list:
+        if isinstance(os.get('criado_em'), str):
+            os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+        if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+            os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+    return os_list
+
+@api_router.get("/ordens-servico/{os_id}", response_model=OrdemServico)
+async def get_os(os_id: str, current_user: dict = Depends(get_current_user)):
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="Ordem de Serviço não encontrada")
+    if isinstance(os.get('criado_em'), str):
+        os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+    if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+        os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+    return OrdemServico(**os)
+
+@api_router.put("/ordens-servico/{os_id}/status")
+async def update_os_status(os_id: str, status: str, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    update_data = {"status": status}
+    if status == "concluido":
+        update_data["concluido_em"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.ordens_servico.update_one({"id": os_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    return {"message": "Status atualizado com sucesso"}
+
+# ========== ORÇAMENTOS ROUTES ==========
+@api_router.post("/orcamentos", response_model=Orcamento)
+async def create_orcamento(data: OrcamentoCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    cliente = await db.clientes.find_one({"id": data.cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    valor_total = sum(s.valor for s in data.servicos) + sum(p.valor_total for p in data.pecas)
+    
+    orcamento = Orcamento(
+        numero=data.numero,
+        cliente_id=data.cliente_id,
+        cliente_nome=cliente["nome"],
+        veiculo_tipo=data.veiculo_tipo,
+        veiculo_modelo=data.veiculo_modelo,
+        servicos=[s.model_dump() for s in data.servicos],
+        pecas=[p.model_dump() for p in data.pecas],
+        valor_total=valor_total
+    )
+    
+    doc = orcamento.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.orcamentos.insert_one(doc)
+    return orcamento
+
+@api_router.get("/orcamentos", response_model=List[Orcamento])
+async def list_orcamentos(current_user: dict = Depends(get_current_user)):
+    orcamentos = await db.orcamentos.find({}, {"_id": 0}).sort("criado_em", -1).to_list(1000)
+    for o in orcamentos:
+        if isinstance(o.get('criado_em'), str):
+            o['criado_em'] = datetime.fromisoformat(o['criado_em'])
+    return orcamentos
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,7 +453,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
