@@ -1,0 +1,103 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Wrench, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, senha);
+      toast.success('Login realizado com sucesso!');
+      navigate('/dashboard');
+    } catch (err) {
+      const message = err.response?.data?.detail || 'Erro ao fazer login';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1e3a5f] via-[#2d5a8a] to-[#1e3a5f] flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-lg shadow-xl p-8">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-[#f97316] rounded-lg flex items-center justify-center mb-4">
+              <Wrench className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="font-heading font-black text-3xl text-[#1e3a5f]">Oficina Reis</h1>
+            <p className="text-slate-600 text-sm mt-1">Retificação de Motores</p>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2" data-testid="login-error">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                data-testid="login-email"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
+                placeholder="seu@email.com"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Senha
+              </label>
+              <input
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                data-testid="login-password"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              data-testid="login-submit"
+              className="w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-medium py-2.5 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-slate-600">
+            <p>Usuário demo:</p>
+            <p className="font-mono text-xs mt-1 text-slate-500">admin@oficinareis.com / admin123</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
