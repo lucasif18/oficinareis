@@ -230,3 +230,46 @@ class RomaneioCreate(BaseModel):
     motorista_id: str
     os_ids: List[str] = []
     data_entrega: datetime
+
+class ContaPagar(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    descricao: str
+    valor: float
+    data_vencimento: datetime
+    data_pagamento: Optional[datetime] = None
+    categoria: str  # Fornecedores, Funcionários, Impostos, etc
+    status: Literal["pendente", "pago"] = "pendente"
+    observacoes: Optional[str] = None
+    criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ContaPagarCreate(BaseModel):
+    descricao: str
+    valor: float
+    data_vencimento: datetime
+    categoria: str
+    observacoes: Optional[str] = None
+
+class ContaReceber(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    descricao: str
+    valor: float
+    data_vencimento: datetime
+    data_recebimento: Optional[datetime] = None
+    cliente_id: Optional[str] = None
+    cliente_nome: Optional[str] = None
+    os_id: Optional[str] = None
+    status: Literal["pendente", "recebido"] = "pendente"
+    observacoes: Optional[str] = None
+    criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ContaReceberCreate(BaseModel):
+    descricao: str
+    valor: float
+    data_vencimento: datetime
+    cliente_id: Optional[str] = None
+    os_id: Optional[str] = None
+    observacoes: Optional[str] = None
