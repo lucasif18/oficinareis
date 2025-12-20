@@ -1036,6 +1036,211 @@ async def gerar_pdf_romaneio(romaneio_id: str, current_user: dict = Depends(get_
     
     return StreamingResponse(pdf_buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Romaneio-{romaneio['numero']}.pdf"})
 
+# ========== FINANCEIRO - CONTAS A PAGAR ==========
+@api_router.post("/financeiro/contas-pagar", response_model=ContaPagar)
+async def create_conta_pagar(data: ContaPagarCreate, current_user: dict = Depends(require_role(["admin"]))):
+    conta = ContaPagar(**data.model_dump())
+    doc = conta.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    doc['data_vencimento'] = doc['data_vencimento'].isoformat()
+    await db.contas_pagar.insert_one(doc)
+    return conta
+
+@api_router.get("/financeiro/contas-pagar", response_model=List[ContaPagar])
+async def list_contas_pagar(
+    status: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    
+    contas = await db.contas_pagar.find(query, {"_id": 0}).sort("data_vencimento", 1).to_list(1000)
+    for c in contas:
+        if isinstance(c.get('criado_em'), str):
+            c['criado_em'] = datetime.fromisoformat(c['criado_em'])
+        if isinstance(c.get('data_vencimento'), str):
+            c['data_vencimento'] = datetime.fromisoformat(c['data_vencimento'])
+        if c.get('data_pagamento') and isinstance(c['data_pagamento'], str):
+            c['data_pagamento'] = datetime.fromisoformat(c['data_pagamento'])
+    return contas
+
+@api_router.put("/financeiro/contas-pagar/{conta_id}/pagar")
+async def pagar_conta(conta_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.contas_pagar.update_one(
+        {"id": conta_id},
+        {"$set": {"status": "pago", "data_pagamento": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    return {"message": "Conta marcada como paga"}
+
+@api_router.delete("/financeiro/contas-pagar/{conta_id}")
+async def delete_conta_pagar(conta_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.contas_pagar.delete_one({"id": conta_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    return {"message": "Conta deletada com sucesso"}
+
+# ========== FINANCEIRO - CONTAS A RECEBER ==========
+@api_router.post("/financeiro/contas-receber", response_model=ContaReceber)
+async def create_conta_receber(data: ContaReceberCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    conta_data = data.model_dump()
+    
+    if data.cliente_id:
+        cliente = await db.clientes.find_one({"id": data.cliente_id}, {"_id": 0})
+        if cliente:
+            conta_data["cliente_nome"] = cliente["nome"]
+    
+    conta = ContaReceber(**conta_data)
+    doc = conta.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    doc['data_vencimento'] = doc['data_vencimento'].isoformat()
+    await db.contas_receber.insert_one(doc)
+    return conta
+
+@api_router.get("/financeiro/contas-receber", response_model=List[ContaReceber])
+async def list_contas_receber(
+    status: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    
+    contas = await db.contas_receber.find(query, {"_id": 0}).sort("data_vencimento", 1).to_list(1000)
+    for c in contas:
+        if isinstance(c.get('criado_em'), str):
+            c['criado_em'] = datetime.fromisoformat(c['criado_em'])
+        if isinstance(c.get('data_vencimento'), str):
+            c['data_vencimento'] = datetime.fromisoformat(c['data_vencimento'])
+        if c.get('data_recebimento') and isinstance(c['data_recebimento'], str):
+            c['data_recebimento'] = datetime.fromisoformat(c['data_recebimento'])
+    return contas
+
+@api_router.put("/financeiro/contas-receber/{conta_id}/receber")
+async def receber_conta(conta_id: str, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    result = await db.contas_receber.update_one(
+        {"id": conta_id},
+        {"$set": {"status": "recebido", "data_recebimento": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    return {"message": "Conta marcada como recebida"}
+
+@api_router.delete("/financeiro/contas-receber/{conta_id}")
+async def delete_conta_receber(conta_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.contas_receber.delete_one({"id": conta_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    return {"message": "Conta deletada com sucesso"}
+
+# ========== FINANCEIRO - FLUXO DE CAIXA ==========
+@api_router.get("/financeiro/fluxo-caixa")
+async def get_fluxo_caixa(
+    data_inicio: Optional[str] = Query(None),
+    data_fim: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    query_pagar = {}
+    query_receber = {}
+    
+    if data_inicio and data_fim:
+        data_inicio_dt = datetime.fromisoformat(data_inicio)
+        data_fim_dt = datetime.fromisoformat(data_fim)
+        query_pagar["data_vencimento"] = {"$gte": data_inicio_dt.isoformat(), "$lte": data_fim_dt.isoformat()}
+        query_receber["data_vencimento"] = {"$gte": data_inicio_dt.isoformat(), "$lte": data_fim_dt.isoformat()}
+    
+    contas_pagar = await db.contas_pagar.find(query_pagar, {"_id": 0}).to_list(1000)
+    contas_receber = await db.contas_receber.find(query_receber, {"_id": 0}).to_list(1000)
+    
+    total_pagar = sum(c["valor"] for c in contas_pagar)
+    total_pagar_pendente = sum(c["valor"] for c in contas_pagar if c["status"] == "pendente")
+    total_pagar_pago = sum(c["valor"] for c in contas_pagar if c["status"] == "pago")
+    
+    total_receber = sum(c["valor"] for c in contas_receber)
+    total_receber_pendente = sum(c["valor"] for c in contas_receber if c["status"] == "pendente")
+    total_receber_recebido = sum(c["valor"] for c in contas_receber if c["status"] == "recebido")
+    
+    saldo = total_receber_recebido - total_pagar_pago
+    saldo_previsto = total_receber - total_pagar
+    
+    return {
+        "contas_pagar": {
+            "total": round(total_pagar, 2),
+            "pendente": round(total_pagar_pendente, 2),
+            "pago": round(total_pagar_pago, 2)
+        },
+        "contas_receber": {
+            "total": round(total_receber, 2),
+            "pendente": round(total_receber_pendente, 2),
+            "recebido": round(total_receber_recebido, 2)
+        },
+        "saldo_atual": round(saldo, 2),
+        "saldo_previsto": round(saldo_previsto, 2)
+    }
+
+# ========== FINANCEIRO - DRE ==========
+@api_router.get("/financeiro/dre")
+async def get_dre(
+    mes: Optional[int] = Query(None),
+    ano: Optional[int] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    import calendar
+    
+    if not mes or not ano:
+        now = datetime.now(timezone.utc)
+        mes = now.month
+        ano = now.year
+    
+    primeiro_dia = datetime(ano, mes, 1, tzinfo=timezone.utc)
+    ultimo_dia = datetime(ano, mes, calendar.monthrange(ano, mes)[1], 23, 59, 59, tzinfo=timezone.utc)
+    
+    os_mes = await db.ordens_servico.find({
+        "status": "concluido",
+        "concluido_em": {
+            "$gte": primeiro_dia.isoformat(),
+            "$lte": ultimo_dia.isoformat()
+        }
+    }, {"_id": 0}).to_list(1000)
+    
+    receita_servicos = sum(os["valor_servicos"] for os in os_mes)
+    receita_pecas = sum(os["valor_pecas"] for os in os_mes)
+    receita_bruta = receita_servicos + receita_pecas
+    
+    despesas = await db.contas_pagar.find({
+        "status": "pago",
+        "data_pagamento": {
+            "$gte": primeiro_dia.isoformat(),
+            "$lte": ultimo_dia.isoformat()
+        }
+    }, {"_id": 0}).to_list(1000)
+    
+    despesas_por_categoria = {}
+    for despesa in despesas:
+        categoria = despesa.get("categoria", "Outras")
+        despesas_por_categoria[categoria] = despesas_por_categoria.get(categoria, 0) + despesa["valor"]
+    
+    total_despesas = sum(despesas_por_categoria.values())
+    lucro_bruto = receita_bruta - total_despesas
+    margem_lucro = (lucro_bruto / receita_bruta * 100) if receita_bruta > 0 else 0
+    
+    return {
+        "mes": mes,
+        "ano": ano,
+        "receita_bruta": round(receita_bruta, 2),
+        "receita_servicos": round(receita_servicos, 2),
+        "receita_pecas": round(receita_pecas, 2),
+        "despesas": {
+            "total": round(total_despesas, 2),
+            "por_categoria": {k: round(v, 2) for k, v in despesas_por_categoria.items()}
+        },
+        "lucro_bruto": round(lucro_bruto, 2),
+        "margem_lucro": round(margem_lucro, 2),
+        "quantidade_os": len(os_mes)
+    }
+
 app.include_router(api_router)
 
 app.add_middleware(
