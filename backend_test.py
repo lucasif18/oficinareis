@@ -91,14 +91,14 @@ class FinanceiroAPITester:
         hoje = datetime.now()
         inicio_mes = hoje.replace(day=1).strftime('%Y-%m-%d')
         fim_mes = (hoje.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
-        fim_mes = fim_mes.strftime('%Y-%m-%d')
+        fim_mes_str = fim_mes.strftime('%Y-%m-%d')
         
         self.run_test(
             "Fluxo de Caixa - With Date Filter",
             "GET",
             "api/financeiro/fluxo-caixa",
             200,
-            params={"data_inicio": inicio_mes, "data_fim": fim_mes.strftime('%Y-%m-%d')}
+            params={"data_inicio": inicio_mes, "data_fim": fim_mes_str}
         )
         
         # Test DRE
