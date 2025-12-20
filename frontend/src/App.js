@@ -9,6 +9,7 @@ import Clientes from './pages/Clientes';
 import Pecas from './pages/Pecas';
 import OrdensServico from './pages/OrdensServico';
 import NovaOS from './pages/NovaOS';
+import ViewOS from './pages/ViewOS';
 import Orcamentos from './pages/Orcamentos';
 import NovoOrcamento from './pages/NovoOrcamento';
 import Romaneio from './pages/Romaneio';
