@@ -9,6 +9,11 @@ import Clientes from './pages/Clientes';
 import Pecas from './pages/Pecas';
 import OrdensServico from './pages/OrdensServico';
 import NovaOS from './pages/NovaOS';
+import Orcamentos from './pages/Orcamentos';
+import NovoOrcamento from './pages/NovoOrcamento';
+import Romaneio from './pages/Romaneio';
+import Motoristas from './pages/Motoristas';
+import TabelaPrecos from './pages/TabelaPrecos';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
