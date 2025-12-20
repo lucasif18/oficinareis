@@ -1083,7 +1083,7 @@ async def delete_conta_pagar(conta_id: str, current_user: dict = Depends(require
     return {"message": "Conta deletada com sucesso"}
 
 # ========== FINANCEIRO - CONTAS A RECEBER ==========
-@api_router.post("/financeiro/contas-receber", response_model=ContaReceber)
+@api_router.post("/financeiro/contas-receber", response_model=ContaReceber, status_code=201)
 async def create_conta_receber(data: ContaReceberCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
     conta_data = data.model_dump()
     
