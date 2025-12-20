@@ -428,11 +428,11 @@ const ContasReceber = () => {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" data-testid="os-modal">
           <DialogHeader>
             <DialogTitle>Importar OS Concluídas como Contas a Receber</DialogTitle>
+            <DialogDescription>
+              Selecione as Ordens de Serviço concluídas que deseja adicionar como contas a receber para cobrança.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Selecione as Ordens de Serviço concluídas que deseja adicionar como contas a receber para cobrança.
-            </p>
             
             {osDisponiveis.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
