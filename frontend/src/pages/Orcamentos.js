@@ -163,6 +163,15 @@ const Orcamentos = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
+                          <Link to={`/orcamentos/${orc.id}`}>
+                            <button
+                              className="px-3 py-1 text-xs font-medium bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors flex items-center gap-1"
+                              data-testid={`view-orc-${orc.id}`}
+                            >
+                              <Eye className="w-3 h-3" />
+                              Visualizar
+                            </button>
+                          </Link>
                           {orc.status === 'pendente' && (
                             <>
                               <button
