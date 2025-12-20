@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Truck } from 'lucide-react';
+import { Plus, Eye, FileText, ArrowRight, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
