@@ -503,6 +503,166 @@ async def list_orcamentos(current_user: dict = Depends(get_current_user)):
             o['criado_em'] = datetime.fromisoformat(o['criado_em'])
     return orcamentos
 
+@api_router.get("/orcamentos/{orcamento_id}", response_model=Orcamento)
+async def get_orcamento(orcamento_id: str, current_user: dict = Depends(get_current_user)):
+    orcamento = await db.orcamentos.find_one({"id": orcamento_id}, {"_id": 0})
+    if not orcamento:
+        raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+    if isinstance(orcamento.get('criado_em'), str):
+        orcamento['criado_em'] = datetime.fromisoformat(orcamento['criado_em'])
+    return Orcamento(**orcamento)
+
+@api_router.put("/orcamentos/{orcamento_id}/status")
+async def update_orcamento_status(
+    orcamento_id: str, 
+    status: str,
+    current_user: dict = Depends(require_role(["admin", "funcionario"]))
+):
+    result = await db.orcamentos.update_one({"id": orcamento_id}, {"$set": {"status": status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+    return {"message": "Status atualizado com sucesso"}
+
+@api_router.post("/orcamentos/{orcamento_id}/converter-os")
+async def converter_orcamento_para_os(
+    orcamento_id: str,
+    numero_fisico: str,
+    veiculo_serie: Optional[str] = None,
+    categoria: str = "leve",
+    current_user: dict = Depends(require_role(["admin", "funcionario"]))
+):
+    orcamento = await db.orcamentos.find_one({"id": orcamento_id}, {"_id": 0})
+    if not orcamento:
+        raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+    
+    if orcamento.get("convertido_os_id"):
+        raise HTTPException(status_code=400, detail="Orçamento já foi convertido para OS")
+    
+    if isinstance(orcamento.get('criado_em'), str):
+        orcamento['criado_em'] = datetime.fromisoformat(orcamento['criado_em'])
+    
+    valor_servicos = sum(s['valor'] for s in orcamento['servicos'])
+    valor_pecas = sum(p['valor_total'] for p in orcamento['pecas'])
+    valor_total = valor_servicos + valor_pecas
+    
+    os = OrdemServico(
+        numero_fisico=numero_fisico,
+        cliente_id=orcamento["cliente_id"],
+        cliente_nome=orcamento["cliente_nome"],
+        veiculo_tipo=orcamento["veiculo_tipo"],
+        veiculo_modelo=orcamento["veiculo_modelo"],
+        veiculo_serie=veiculo_serie,
+        categoria=categoria,
+        servicos=orcamento["servicos"],
+        pecas=orcamento["pecas"],
+        desconto_tipo="fixo",
+        desconto_valor=0.0,
+        valor_servicos=valor_servicos,
+        valor_pecas=valor_pecas,
+        valor_desconto=0.0,
+        valor_total=valor_total
+    )
+    
+    for peca in orcamento["pecas"]:
+        await db.pecas.update_one(
+            {"id": peca["peca_id"]},
+            {"$inc": {"quantidade": -peca["quantidade"]}}
+        )
+    
+    doc = os.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.ordens_servico.insert_one(doc)
+    
+    await db.orcamentos.update_one(
+        {"id": orcamento_id},
+        {"$set": {"status": "aprovado", "convertido_os_id": os.id}}
+    )
+    
+    return {"message": "Orçamento convertido para OS com sucesso", "os_id": os.id}
+
+# ========== ROMANEIO ROUTES ==========
+@api_router.post("/romaneios", response_model=Romaneio)
+async def create_romaneio(data: RomaneioCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    motorista = await db.motoristas.find_one({"id": data.motorista_id}, {"_id": 0})
+    if not motorista:
+        raise HTTPException(status_code=404, detail="Motorista não encontrado")
+    
+    for os_id in data.os_ids:
+        os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+        if not os:
+            raise HTTPException(status_code=404, detail=f"OS {os_id} não encontrada")
+        if os["status"] != "concluido":
+            raise HTTPException(status_code=400, detail=f"OS {os_id} não está concluída")
+    
+    romaneio = Romaneio(
+        numero=data.numero,
+        motorista_id=data.motorista_id,
+        motorista_nome=motorista["nome"],
+        os_ids=data.os_ids,
+        data_entrega=data.data_entrega
+    )
+    
+    doc = romaneio.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    doc['data_entrega'] = doc['data_entrega'].isoformat()
+    await db.romaneios.insert_one(doc)
+    return romaneio
+
+@api_router.get("/romaneios", response_model=List[Romaneio])
+async def list_romaneios(current_user: dict = Depends(get_current_user)):
+    romaneios = await db.romaneios.find({}, {"_id": 0}).sort("criado_em", -1).to_list(1000)
+    for r in romaneios:
+        if isinstance(r.get('criado_em'), str):
+            r['criado_em'] = datetime.fromisoformat(r['criado_em'])
+        if isinstance(r.get('data_entrega'), str):
+            r['data_entrega'] = datetime.fromisoformat(r['data_entrega'])
+    return romaneios
+
+@api_router.get("/romaneios/{romaneio_id}", response_model=Romaneio)
+async def get_romaneio(romaneio_id: str, current_user: dict = Depends(get_current_user)):
+    romaneio = await db.romaneios.find_one({"id": romaneio_id}, {"_id": 0})
+    if not romaneio:
+        raise HTTPException(status_code=404, detail="Romaneio não encontrado")
+    if isinstance(romaneio.get('criado_em'), str):
+        romaneio['criado_em'] = datetime.fromisoformat(romaneio['criado_em'])
+    if isinstance(romaneio.get('data_entrega'), str):
+        romaneio['data_entrega'] = datetime.fromisoformat(romaneio['data_entrega'])
+    return Romaneio(**romaneio)
+
+@api_router.put("/romaneios/{romaneio_id}/status")
+async def update_romaneio_status(
+    romaneio_id: str,
+    status: str,
+    current_user: dict = Depends(get_current_user)
+):
+    result = await db.romaneios.update_one({"id": romaneio_id}, {"$set": {"status": status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Romaneio não encontrado")
+    return {"message": "Status atualizado com sucesso"}
+
+@api_router.get("/romaneios/os-disponiveis/list")
+async def list_os_disponiveis_romaneio(current_user: dict = Depends(get_current_user)):
+    os_concluidas = await db.ordens_servico.find({"status": "concluido"}, {"_id": 0}).to_list(1000)
+    
+    romaneios_pendentes = await db.romaneios.find(
+        {"status": {"$in": ["pendente", "em_rota"]}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    os_ids_em_romaneio = []
+    for r in romaneios_pendentes:
+        os_ids_em_romaneio.extend(r.get("os_ids", []))
+    
+    os_disponiveis = [os for os in os_concluidas if os["id"] not in os_ids_em_romaneio]
+    
+    for os in os_disponiveis:
+        if isinstance(os.get('criado_em'), str):
+            os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+        if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+            os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+    
+    return os_disponiveis
+
 app.include_router(api_router)
 
 app.add_middleware(
