@@ -477,6 +477,197 @@ async def update_os_status(os_id: str, status: str, current_user: dict = Depends
         raise HTTPException(status_code=404, detail="OS não encontrada")
     return {"message": "Status atualizado com sucesso"}
 
+@api_router.get("/ordens-servico/{os_id}/pdf")
+async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user)):
+    from weasyprint import HTML
+    import io
+    
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    if isinstance(os.get('criado_em'), str):
+        os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+    if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+        os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+    
+    status_labels = {
+        "pendente": "Pendente",
+        "andamento": "Em Andamento",
+        "concluido": "Concluído"
+    }
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            .header {{ text-align: center; margin-bottom: 40px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }}
+            .header h1 {{ color: #1e3a5f; margin: 0; font-size: 32px; }}
+            .header p {{ color: #666; margin: 5px 0; }}
+            .os-number {{ font-size: 24px; font-weight: bold; color: #1e3a5f; margin: 20px 0; }}
+            .section {{ margin: 30px 0; }}
+            .section-title {{ font-size: 18px; font-weight: bold; color: #1e3a5f; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }}
+            .info-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
+            .info-item {{ margin: 10px 0; }}
+            .info-label {{ color: #666; font-size: 12px; }}
+            .info-value {{ color: #000; font-weight: 500; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+            th {{ background-color: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }}
+            td {{ padding: 10px; border-bottom: 1px solid #eee; }}
+            .total-section {{ margin-top: 30px; text-align: right; }}
+            .total-row {{ display: flex; justify-content: space-between; padding: 8px 0; }}
+            .total-label {{ font-weight: 500; }}
+            .total-value {{ font-family: monospace; font-weight: 600; }}
+            .grand-total {{ font-size: 20px; color: #1e3a5f; border-top: 2px solid #1e3a5f; padding-top: 15px; margin-top: 15px; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Oficina Reis</h1>
+            <p>Retificação de Motores</p>
+        </div>
+        
+        <div class="os-number">Ordem de Serviço #</div>{os['numero_fisico']}<div class="os-number">
+        <p>Status: {status_labels.get(os['status'], os['status'])}</p>
+        
+        <div class="section">
+            <div class="section-title">Cliente</div>
+            <div class="info-item">
+                <div class="info-value">{os['cliente_nome']}</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Veículo</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Tipo</div>
+                    <div class="info-value">{os['veiculo_tipo']}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Modelo</div>
+                    <div class="info-value">{os['veiculo_modelo']}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Série/Potência</div>
+                    <div class="info-value">{os.get('veiculo_serie', '-')}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Categoria</div>
+                    <div class="info-value">{os['categoria'].capitalize()}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Serviços</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Setor</th>
+                        <th>Serviço</th>
+                        <th>Funcionário</th>
+                        <th style="text-align: right;">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+    
+    for servico in os.get('servicos', []):
+        html_content += f"""
+                    <tr>
+                        <td>{servico['setor']}</td>
+                        <td>{servico['servico']}</td>
+                        <td>{servico.get('funcionario_nome', '-')}</td>
+                        <td style="text-align: right;">R$ {servico['valor']:.2f}</td>
+                    </tr>
+        """
+    
+    html_content += """
+                </tbody>
+            </table>
+        </div>
+    """
+    
+    if os.get('pecas'):
+        html_content += """
+        <div class="section">
+            <div class="section-title">Peças Utilizadas</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Peça</th>
+                        <th style="text-align: center;">Quantidade</th>
+                        <th style="text-align: right;">Valor Unit.</th>
+                        <th style="text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+        
+        for peca in os['pecas']:
+            html_content += f"""
+                    <tr>
+                        <td>{peca['peca_nome']}</td>
+                        <td style="text-align: center;">{peca['quantidade']}</td>
+                        <td style="text-align: right;">R$ {peca['valor_unitario']:.2f}</td>
+                        <td style="text-align: right;">R$ {peca['valor_total']:.2f}</td>
+                    </tr>
+            """
+        
+        html_content += """
+                </tbody>
+            </table>
+        </div>
+        """
+    
+    html_content += f"""
+        <div class="total-section">
+            <div class="total-row">
+                <div class="total-label">Subtotal Serviços:</div>
+                <div class="total-value">R$ {os['valor_servicos']:.2f}</div>
+            </div>
+            <div class="total-row">
+                <div class="total-label">Subtotal Peças:</div>
+                <div class="total-value">R$ {os['valor_pecas']:.2f}</div>
+            </div>
+    """
+    
+    if os['valor_desconto'] > 0:
+        html_content += f"""
+            <div class="total-row" style="color: #f97316;">
+                <div class="total-label">Desconto:</div>
+                <div class="total-value">- R$ {os['valor_desconto']:.2f}</div>
+            </div>
+        """
+    
+    html_content += f"""
+            <div class="total-row grand-total">
+                <div class="total-label">TOTAL:</div>
+                <div class="total-value">R$ {os['valor_total']:.2f}</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
+            <p>Criado em: {os['criado_em'].strftime('%d/%m/%Y')}</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    pdf_buffer = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=OS-{os['numero_fisico']}.pdf"}
+    )
+
 # ========== ORÇAMENTOS ROUTES ==========
 @api_router.post("/orcamentos", response_model=Orcamento)
 async def create_orcamento(data: OrcamentoCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
