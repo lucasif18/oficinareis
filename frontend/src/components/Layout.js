@@ -22,6 +22,7 @@ const Layout = ({ children }) => {
     { path: '/romaneio', icon: Truck, label: 'Romaneio', roles: ['admin', 'funcionario', 'motorista'] },
     { path: '/funcionarios', icon: UserCog, label: 'Funcionários', roles: ['admin'] },
     { path: '/motoristas', icon: Truck, label: 'Motoristas', roles: ['admin'] },
+    { path: '/tabela-precos', icon: DollarSign, label: 'Tabela de Preços', roles: ['admin'] },
     { path: '/financeiro', icon: DollarSign, label: 'Financeiro', roles: ['admin'] },
     { path: '/relatorios', icon: BarChart3, label: 'Relatórios', roles: ['admin', 'funcionario'] },
   ];
