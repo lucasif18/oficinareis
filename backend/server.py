@@ -288,6 +288,13 @@ async def update_funcionario(funcionario_id: str, data: FuncionarioCreate, curre
         updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
     return Funcionario(**updated)
 
+@api_router.delete("/funcionarios/{funcionario_id}")
+async def delete_funcionario(funcionario_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.funcionarios.delete_one({"id": funcionario_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Funcionário não encontrado")
+    return {"message": "Funcionário deletado com sucesso"}
+
 # ========== MOTORISTAS ROUTES ==========
 @api_router.post("/motoristas", response_model=Motorista)
 async def create_motorista(data: MotoristaCreate, current_user: dict = Depends(require_role(["admin"]))):
