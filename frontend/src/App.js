@@ -105,13 +105,19 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/funcionarios" element={
+            <PrivateRoute>
+              <Funcionarios />
+            </PrivateRoute>
+          } />
+          
           <Route path="/motoristas" element={
             <PrivateRoute>
               <Motoristas />
             </PrivateRoute>
           } />
           
-          <Route path="/funcionarios" element={
+          <Route path="/tabela-precos" element={
             <PrivateRoute>
               <TabelaPrecos />
             </PrivateRoute>
