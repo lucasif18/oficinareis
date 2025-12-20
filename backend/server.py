@@ -1037,7 +1037,7 @@ async def gerar_pdf_romaneio(romaneio_id: str, current_user: dict = Depends(get_
     return StreamingResponse(pdf_buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Romaneio-{romaneio['numero']}.pdf"})
 
 # ========== FINANCEIRO - CONTAS A PAGAR ==========
-@api_router.post("/financeiro/contas-pagar", response_model=ContaPagar)
+@api_router.post("/financeiro/contas-pagar", response_model=ContaPagar, status_code=201)
 async def create_conta_pagar(data: ContaPagarCreate, current_user: dict = Depends(require_role(["admin"]))):
     conta = ContaPagar(**data.model_dump())
     doc = conta.model_dump()
