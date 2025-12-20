@@ -86,6 +86,36 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/orcamentos" element={
+            <PrivateRoute>
+              <Orcamentos />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/orcamentos/novo" element={
+            <PrivateRoute>
+              <NovoOrcamento />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/romaneio" element={
+            <PrivateRoute>
+              <Romaneio />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/motoristas" element={
+            <PrivateRoute>
+              <Motoristas />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/funcionarios" element={
+            <PrivateRoute>
+              <TabelaPrecos />
+            </PrivateRoute>
+          } />
+          
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
