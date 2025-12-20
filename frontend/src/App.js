@@ -19,6 +19,10 @@ import Motoristas from './pages/Motoristas';
 import TabelaPrecos from './pages/TabelaPrecos';
 import Funcionarios from './pages/Funcionarios';
 import Financeiro from './pages/Financeiro';
+import FluxoCaixa from './pages/FluxoCaixa';
+import ContasPagar from './pages/ContasPagar';
+import ContasReceber from './pages/ContasReceber';
+import DRE from './pages/DRE';
 import Relatorios from './pages/Relatorios';
 import './App.css';
 
