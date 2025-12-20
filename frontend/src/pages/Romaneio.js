@@ -203,6 +203,15 @@ const Romaneio = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
+                          <Link to={`/romaneio/${rom.id}`}>
+                            <button
+                              className="px-3 py-1 text-xs font-medium bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors flex items-center gap-1"
+                              data-testid={`view-romaneio-${rom.id}`}
+                            >
+                              <Eye className="w-3 h-3" />
+                              Visualizar
+                            </button>
+                          </Link>
                           {rom.status === 'pendente' && (
                             <button
                               onClick={() => updateStatus(rom.id, 'em_rota')}
