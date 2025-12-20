@@ -352,6 +352,36 @@ async def list_tabela_precos(current_user: dict = Depends(get_current_user)):
             t['criado_em'] = datetime.fromisoformat(t['criado_em'])
     return tabelas
 
+@api_router.get("/tabela-precos/{tabela_id}", response_model=TabelaPreco)
+async def get_tabela_preco(tabela_id: str, current_user: dict = Depends(get_current_user)):
+    tabela = await db.tabela_precos.find_one({"id": tabela_id}, {"_id": 0})
+    if not tabela:
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+    if isinstance(tabela.get('criado_em'), str):
+        tabela['criado_em'] = datetime.fromisoformat(tabela['criado_em'])
+    return TabelaPreco(**tabela)
+
+@api_router.put("/tabela-precos/{tabela_id}", response_model=TabelaPreco)
+async def update_tabela_preco(tabela_id: str, data: TabelaPrecoCreate, current_user: dict = Depends(require_role(["admin"]))):
+    existing = await db.tabela_precos.find_one({"id": tabela_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+    
+    update_data = data.model_dump()
+    await db.tabela_precos.update_one({"id": tabela_id}, {"$set": update_data})
+    
+    updated = await db.tabela_precos.find_one({"id": tabela_id}, {"_id": 0})
+    if isinstance(updated.get('criado_em'), str):
+        updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
+    return TabelaPreco(**updated)
+
+@api_router.delete("/tabela-precos/{tabela_id}")
+async def delete_tabela_preco(tabela_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.tabela_precos.delete_one({"id": tabela_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+    return {"message": "Serviço deletado com sucesso"}
+
 # ========== ORDENS DE SERVIÇO ROUTES ==========
 @api_router.post("/ordens-servico", response_model=OrdemServico)
 async def create_os(data: OrdemServicoCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
