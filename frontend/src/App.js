@@ -146,6 +146,18 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/financeiro" element={
+            <PrivateRoute>
+              <Financeiro />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/relatorios" element={
+            <PrivateRoute>
+              <Relatorios />
+            </PrivateRoute>
+          } />
+          
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
