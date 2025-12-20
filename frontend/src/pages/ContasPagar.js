@@ -270,6 +270,9 @@ const ContasPagar = () => {
         <DialogContent className="max-w-2xl" data-testid="conta-modal">
           <DialogHeader>
             <DialogTitle>Nova Conta a Pagar</DialogTitle>
+            <DialogDescription>
+              Preencha os dados para cadastrar uma nova conta a pagar
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
