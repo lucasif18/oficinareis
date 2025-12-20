@@ -14,6 +14,7 @@ import NovoOrcamento from './pages/NovoOrcamento';
 import Romaneio from './pages/Romaneio';
 import Motoristas from './pages/Motoristas';
 import TabelaPrecos from './pages/TabelaPrecos';
+import Funcionarios from './pages/Funcionarios';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
