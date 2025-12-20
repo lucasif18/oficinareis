@@ -156,6 +156,30 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/financeiro/fluxo-caixa" element={
+            <PrivateRoute>
+              <FluxoCaixa />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/financeiro/contas-pagar" element={
+            <PrivateRoute>
+              <ContasPagar />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/financeiro/contas-receber" element={
+            <PrivateRoute>
+              <ContasReceber />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/financeiro/dre" element={
+            <PrivateRoute>
+              <DRE />
+            </PrivateRoute>
+          } />
+          
           <Route path="/relatorios" element={
             <PrivateRoute>
               <Relatorios />
