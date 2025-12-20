@@ -18,6 +18,8 @@ import ViewRomaneio from './pages/ViewRomaneio';
 import Motoristas from './pages/Motoristas';
 import TabelaPrecos from './pages/TabelaPrecos';
 import Funcionarios from './pages/Funcionarios';
+import Financeiro from './pages/Financeiro';
+import Relatorios from './pages/Relatorios';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
