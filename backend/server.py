@@ -934,6 +934,106 @@ async def list_os_disponiveis_romaneio(current_user: dict = Depends(get_current_
     
     return os_disponiveis
 
+@api_router.get("/romaneios/{romaneio_id}/pdf")
+async def gerar_pdf_romaneio(romaneio_id: str, current_user: dict = Depends(get_current_user)):
+    from weasyprint import HTML
+    import io
+    
+    romaneio = await db.romaneios.find_one({"id": romaneio_id}, {"_id": 0})
+    if not romaneio:
+        raise HTTPException(status_code=404, detail="Romaneio não encontrado")
+    
+    if isinstance(romaneio.get('criado_em'), str):
+        romaneio['criado_em'] = datetime.fromisoformat(romaneio['criado_em'])
+    if isinstance(romaneio.get('data_entrega'), str):
+        romaneio['data_entrega'] = datetime.fromisoformat(romaneio['data_entrega'])
+    
+    os_list = []
+    for os_id in romaneio['os_ids']:
+        os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+        if os:
+            os_list.append(os)
+    
+    status_labels = {"pendente": "Pendente", "em_rota": "Em Rota", "concluido": "Concluído"}
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            .header {{ text-align: center; margin-bottom: 40px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }}
+            .header h1 {{ color: #1e3a5f; margin: 0; font-size: 32px; }}
+            .section {{ margin: 30px 0; }}
+            .section-title {{ font-size: 18px; font-weight: bold; color: #1e3a5f; margin-bottom: 15px; }}
+            .os-box {{ border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }}
+            .os-header {{ font-size: 16px; font-weight: bold; color: #1e3a5f; margin-bottom: 10px; }}
+            .signature-box {{ margin-top: 60px; padding-top: 20px; border-top: 2px solid #ddd; }}
+            .signature-line {{ border-bottom: 2px solid #333; margin: 40px 20px 10px 20px; }}
+            .total {{ font-size: 20px; font-weight: bold; text-align: right; color: #1e3a5f; margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Oficina Reis - Romaneio</h1>
+            <p>#{romaneio['numero']} - Status: {status_labels.get(romaneio['status'], romaneio['status'])}</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Motorista</div>
+            <p><strong>{romaneio['motorista_nome']}</strong></p>
+            <p>Data de Entrega: {romaneio['data_entrega'].strftime('%d/%m/%Y')}</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Ordens de Serviço para Entrega</div>
+    """
+    
+    total_valor = 0
+    for os in os_list:
+        total_valor += os['valor_total']
+        html_content += f"""
+            <div class="os-box">
+                <div class="os-header">OS #{os['numero_fisico']} - {os['cliente_nome']}</div>
+                <p>Veículo: {os['veiculo_tipo']} - {os['veiculo_modelo']}</p>
+                <p>Categoria: {os['categoria'].capitalize()}</p>
+                <p style="text-align: right; font-weight: bold;">Valor: R$ {os['valor_total']:.2f}</p>
+            </div>
+        """
+    
+    html_content += f"""
+        </div>
+        
+        <div class="total">
+            <p>Total de OS: {len(os_list)}</p>
+            <p>Valor Total: R$ {total_valor:.2f}</p>
+        </div>
+        
+        <div class="signature-box">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 50%; text-align: center;">
+                        <div class="signature-line"></div>
+                        <p style="font-size: 12px; color: #666;">Assinatura do Motorista</p>
+                    </td>
+                    <td style="width: 50%; text-align: center;">
+                        <div class="signature-line"></div>
+                        <p style="font-size: 12px; color: #666;">Assinatura do Recebedor</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+    
+    pdf_buffer = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return StreamingResponse(pdf_buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Romaneio-{romaneio['numero']}.pdf"})
+
 app.include_router(api_router)
 
 app.add_middleware(
