@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Check, X, Calendar, FileText } from 'lucide-react';
+import { Plus, Check, X, Calendar, FileText, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -17,6 +17,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const ContasReceber = () => {
   const [contas, setContas] = useState([]);
   const [osDisponiveis, setOsDisponiveis] = useState([]);
+  const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showOsModal, setShowOsModal] = useState(false);
@@ -26,62 +27,39 @@ const ContasReceber = () => {
     valor: '',
     data_vencimento: '',
     cliente_id: '',
-    os_id: '',
     observacoes: ''
   });
 
   useEffect(() => {
-    fetchContas();
+    fetchData();
   }, [filterStatus]);
 
-  const fetchContas = async () => {
+  const fetchData = async () => {
     try {
       const params = {};
       if (filterStatus) params.status = filterStatus;
       
-      const response = await axios.get(`${API_URL}/api/financeiro/contas-receber`, { params });
-      setContas(response.data);
+      const [contasRes, osRes, clientesRes] = await Promise.all([
+        axios.get(`${API_URL}/api/financeiro/contas-receber`, { params }),
+        axios.get(`${API_URL}/api/os`),
+        axios.get(`${API_URL}/api/clientes`)
+      ]);
+      
+      setContas(contasRes.data);
+      // Filtrar apenas OS concluídas que ainda não foram adicionadas como contas a receber
+      const osConcluidasIds = contasRes.data
+        .filter(c => c.os_id)
+        .map(c => c.os_id);
+      const osConcluidas = osRes.data.filter(
+        os => os.status === 'concluido' && !osConcluidasIds.includes(os.id)
+      );
+      setOsDisponiveis(osConcluidas);
+      setClientes(clientesRes.data);
     } catch (error) {
-      console.error('Erro ao buscar contas:', error);
-      toast.error('Erro ao carregar contas a receber');
+      console.error('Erro ao buscar dados:', error);
+      toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchOsDisponiveis = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/ordens-servico?status=concluido`);
-      // Filtrar OS que já estão em contas a receber
-      const osIdsEmContas = contas.filter(c => c.os_id).map(c => c.os_id);
-      const disponíveis = response.data.filter(os => !osIdsEmContas.includes(os.id));
-      setOsDisponiveis(disponíveis);
-      setShowOsModal(true);
-    } catch (error) {
-      toast.error('Erro ao carregar OS disponíveis');
-    }
-  };
-
-  const criarContaDeOS = async (os) => {
-    try {
-      const dataVencimento = new Date();
-      dataVencimento.setDate(dataVencimento.getDate() + 30); // 30 dias para vencimento
-      
-      const conta = {
-        descricao: `OS #${os.numero_fisico} - ${os.cliente_nome}`,
-        valor: os.valor_total,
-        data_vencimento: dataVencimento.toISOString(),
-        cliente_id: os.cliente_id,
-        os_id: os.id,
-        observacoes: `Veículo: ${os.veiculo_tipo} ${os.veiculo_modelo}`
-      };
-
-      await axios.post(`${API_URL}/api/financeiro/contas-receber`, conta);
-      toast.success('Conta a receber criada da OS!');
-      setShowOsModal(false);
-      fetchContas();
-    } catch (error) {
-      toast.error('Erro ao criar conta');
     }
   };
 
@@ -95,12 +73,35 @@ const ContasReceber = () => {
       };
 
       await axios.post(`${API_URL}/api/financeiro/contas-receber`, submitData);
-      toast.success('Conta cadastrada com sucesso!');
+      toast.success('Conta a receber cadastrada com sucesso!');
       setShowModal(false);
       resetForm();
-      fetchContas();
+      fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao cadastrar conta');
+    }
+  };
+
+  const adicionarOsComoContaReceber = async (os) => {
+    try {
+      const hoje = new Date();
+      const vencimento = new Date(hoje.setDate(hoje.getDate() + 30));
+      
+      const submitData = {
+        descricao: `OS #${os.numero_fisico} - ${os.cliente_nome}`,
+        valor: os.valor_total,
+        data_vencimento: vencimento.toISOString(),
+        cliente_id: os.cliente_id,
+        os_id: os.id,
+        observacoes: `Veículo: ${os.veiculo_tipo} - ${os.veiculo_modelo}`
+      };
+
+      await axios.post(`${API_URL}/api/financeiro/contas-receber`, submitData);
+      toast.success('OS adicionada como conta a receber!');
+      setShowOsModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao adicionar conta');
     }
   };
 
@@ -109,7 +110,7 @@ const ContasReceber = () => {
     try {
       await axios.put(`${API_URL}/api/financeiro/contas-receber/${id}/receber`);
       toast.success('Conta marcada como recebida!');
-      fetchContas();
+      fetchData();
     } catch (error) {
       toast.error('Erro ao atualizar conta');
     }
@@ -120,7 +121,7 @@ const ContasReceber = () => {
     try {
       await axios.delete(`${API_URL}/api/financeiro/contas-receber/${id}`);
       toast.success('Conta excluída com sucesso!');
-      fetchContas();
+      fetchData();
     } catch (error) {
       toast.error('Erro ao excluir conta');
     }
@@ -132,7 +133,6 @@ const ContasReceber = () => {
       valor: '',
       data_vencimento: '',
       cliente_id: '',
-      os_id: '',
       observacoes: ''
     });
   };
@@ -157,16 +157,17 @@ const ContasReceber = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading font-black text-4xl text-slate-900" data-testid="contas-receber-title">Contas a Receber</h1>
-          <p className="text-slate-600 mt-2">Gerencie seus recebimentos</p>
+          <p className="text-slate-600 mt-2">Controle seus recebimentos e cobranças</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
-            onClick={fetchOsDisponiveis}
+            onClick={() => setShowOsModal(true)}
             variant="outline"
-            data-testid="add-from-os-button"
+            className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white"
+            data-testid="add-os-button"
           >
             <FileText className="w-4 h-4 mr-2" />
-            Adicionar da OS
+            Importar OS
           </Button>
           <Button
             onClick={() => {
@@ -202,6 +203,21 @@ const ContasReceber = () => {
           </p>
         </div>
       </div>
+
+      {osDisponiveis.length > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-orange-600" />
+          <p className="text-orange-800">
+            <strong>{osDisponiveis.length}</strong> OS concluída(s) disponível(is) para cobrança.
+            <button 
+              onClick={() => setShowOsModal(true)}
+              className="ml-2 underline text-orange-700 hover:text-orange-900"
+            >
+              Clique aqui para adicionar
+            </button>
+          </p>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
         <div className="flex gap-4">
@@ -251,6 +267,12 @@ const ContasReceber = () => {
                           <p className="text-sm font-medium text-slate-900">{conta.descricao}</p>
                           {conta.observacoes && (
                             <p className="text-xs text-slate-500 mt-1">{conta.observacoes}</p>
+                          )}
+                          {conta.os_id && (
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-blue-100 text-blue-700 mt-1">
+                              <FileText className="w-3 h-3 mr-1" />
+                              Vinculada a OS
+                            </span>
                           )}
                         </div>
                       </td>
@@ -302,7 +324,7 @@ const ContasReceber = () => {
         )}
       </div>
 
-      {/* Modal: Nova Conta Manual */}
+      {/* Modal Nova Conta */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-2xl" data-testid="conta-modal">
           <DialogHeader>
@@ -315,7 +337,7 @@ const ContasReceber = () => {
                 id="descricao"
                 value={formData.descricao}
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                placeholder="Ex: Serviço prestado"
+                placeholder="Ex: Pagamento de serviço"
                 data-testid="conta-descricao"
                 required
               />
@@ -346,6 +368,22 @@ const ContasReceber = () => {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="cliente_id">Cliente</Label>
+              <select
+                id="cliente_id"
+                value={formData.cliente_id}
+                onChange={(e) => setFormData({ ...formData, cliente_id: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                data-testid="conta-cliente"
+              >
+                <option value="">Selecione um cliente (opcional)</option>
+                {clientes.map(cliente => (
+                  <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -381,55 +419,66 @@ const ContasReceber = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Selecionar OS para Cobrança */}
+      {/* Modal Importar OS */}
       <Dialog open={showOsModal} onOpenChange={setShowOsModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" data-testid="os-modal">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" data-testid="os-modal">
           <DialogHeader>
-            <DialogTitle>Selecionar OS para Cobrança</DialogTitle>
+            <DialogTitle>Importar OS Concluídas como Contas a Receber</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Selecione as Ordens de Serviço concluídas que deseja adicionar como contas a receber para cobrança.
+            </p>
+            
             {osDisponiveis.length === 0 ? (
-              <p className="text-center text-slate-500 py-8">Nenhuma OS concluída disponível para cobrança</p>
+              <div className="text-center py-8 text-slate-500">
+                <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                <p>Nenhuma OS concluída disponível para importar</p>
+                <p className="text-xs mt-1">As OS concluídas já foram adicionadas como contas a receber</p>
+              </div>
             ) : (
-              osDisponiveis.map((os) => (
-                <div
-                  key={os.id}
-                  className="border border-slate-200 rounded-lg p-4 hover:border-[#f97316] hover:bg-orange-50 transition-colors"
-                  data-testid={`os-item-${os.id}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-mono text-lg font-bold text-[#1e3a5f]">OS #{os.numero_fisico}</span>
-                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700">
-                          Concluído
-                        </span>
+              <div className="space-y-3">
+                {osDisponiveis.map((os) => (
+                  <div 
+                    key={os.id} 
+                    className="border border-slate-200 rounded-lg p-4 hover:border-[#f97316] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-slate-900">OS #{os.numero_fisico}</p>
+                        <p className="text-sm text-slate-600">{os.cliente_nome}</p>
+                        <p className="text-xs text-slate-500">
+                          {os.veiculo_tipo} - {os.veiculo_modelo}
+                        </p>
                       </div>
-                      <p className="text-sm font-medium text-slate-900 mb-1">{os.cliente_nome}</p>
-                      <p className="text-xs text-slate-600">
-                        Veículo: {os.veiculo_tipo} - {os.veiculo_modelo}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-2">
-                        Concluído em: {new Date(os.concluido_em || os.criado_em).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-mono text-xl font-bold text-[#1e3a5f] mb-3">
-                        R$ {os.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                      <Button
-                        onClick={() => criarContaDeOS(os)}
-                        size="sm"
-                        className="bg-[#f97316] hover:bg-[#ea580c]"
-                        data-testid={`add-os-${os.id}`}
-                      >
-                        Adicionar
-                      </Button>
+                      <div className="text-right">
+                        <p className="font-mono font-bold text-lg text-[#1e3a5f]">
+                          R$ {os.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                        <Button
+                          size="sm"
+                          onClick={() => adicionarOsComoContaReceber(os)}
+                          className="mt-2 bg-[#f97316] hover:bg-[#ea580c]"
+                          data-testid={`add-os-${os.id}`}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Adicionar
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
+
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowOsModal(false)}
+              >
+                Fechar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
