@@ -305,6 +305,36 @@ async def list_motoristas(current_user: dict = Depends(get_current_user)):
             m['criado_em'] = datetime.fromisoformat(m['criado_em'])
     return motoristas
 
+@api_router.get("/motoristas/{motorista_id}", response_model=Motorista)
+async def get_motorista(motorista_id: str, current_user: dict = Depends(get_current_user)):
+    motorista = await db.motoristas.find_one({"id": motorista_id}, {"_id": 0})
+    if not motorista:
+        raise HTTPException(status_code=404, detail="Motorista não encontrado")
+    if isinstance(motorista.get('criado_em'), str):
+        motorista['criado_em'] = datetime.fromisoformat(motorista['criado_em'])
+    return Motorista(**motorista)
+
+@api_router.put("/motoristas/{motorista_id}", response_model=Motorista)
+async def update_motorista(motorista_id: str, data: MotoristaCreate, current_user: dict = Depends(require_role(["admin"]))):
+    existing = await db.motoristas.find_one({"id": motorista_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Motorista não encontrado")
+    
+    update_data = data.model_dump()
+    await db.motoristas.update_one({"id": motorista_id}, {"$set": update_data})
+    
+    updated = await db.motoristas.find_one({"id": motorista_id}, {"_id": 0})
+    if isinstance(updated.get('criado_em'), str):
+        updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
+    return Motorista(**updated)
+
+@api_router.delete("/motoristas/{motorista_id}")
+async def delete_motorista(motorista_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    result = await db.motoristas.delete_one({"id": motorista_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Motorista não encontrado")
+    return {"message": "Motorista deletado com sucesso"}
+
 # ========== TABELA PREÇO ROUTES ==========
 @api_router.post("/tabela-precos", response_model=TabelaPreco)
 async def create_tabela_preco(data: TabelaPrecoCreate, current_user: dict = Depends(require_role(["admin"]))):
