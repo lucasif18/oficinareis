@@ -778,6 +778,79 @@ async def converter_orcamento_para_os(
     
     return {"message": "Orçamento convertido para OS com sucesso", "os_id": os.id}
 
+@api_router.get("/orcamentos/{orcamento_id}/pdf")
+async def gerar_pdf_orcamento(orcamento_id: str, current_user: dict = Depends(get_current_user)):
+    from weasyprint import HTML
+    import io
+    
+    orcamento = await db.orcamentos.find_one({"id": orcamento_id}, {"_id": 0})
+    if not orcamento:
+        raise HTTPException(status_code=404, detail="Orçamento não encontrado")
+    
+    if isinstance(orcamento.get('criado_em'), str):
+        orcamento['criado_em'] = datetime.fromisoformat(orcamento['criado_em'])
+    
+    status_labels = {"pendente": "Pendente", "aprovado": "Aprovado", "rejeitado": "Rejeitado"}
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            .header {{ text-align: center; margin-bottom: 40px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }}
+            .header h1 {{ color: #1e3a5f; margin: 0; font-size: 32px; }}
+            .section {{ margin: 30px 0; }}
+            .section-title {{ font-size: 18px; font-weight: bold; color: #1e3a5f; margin-bottom: 15px; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+            th {{ background-color: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; }}
+            td {{ padding: 10px; border-bottom: 1px solid #eee; }}
+            .total-section {{ margin-top: 30px; text-align: right; font-size: 20px; font-weight: bold; color: #1e3a5f; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Oficina Reis - Orçamento</h1>
+            <p>#{orcamento['numero']} - Status: {status_labels.get(orcamento['status'], orcamento['status'])}</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Cliente</div>
+            <p>{orcamento['cliente_nome']}</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Veículo</div>
+            <p>Tipo: {orcamento['veiculo_tipo']} | Modelo: {orcamento['veiculo_modelo']}</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Serviços</div>
+            <table>
+                <thead><tr><th>Setor</th><th>Serviço</th><th style="text-align: right;">Valor</th></tr></thead>
+                <tbody>
+    """
+    
+    for servico in orcamento.get('servicos', []):
+        html_content += f"<tr><td>{servico['setor']}</td><td>{servico['servico']}</td><td style='text-align: right;'>R$ {servico['valor']:.2f}</td></tr>"
+    
+    html_content += "</tbody></table></div>"
+    
+    if orcamento.get('pecas'):
+        html_content += "<div class='section'><div class='section-title'>Peças</div><table><thead><tr><th>Peça</th><th>Qtd</th><th style='text-align: right;'>Valor Unit.</th><th style='text-align: right;'>Total</th></tr></thead><tbody>"
+        for peca in orcamento['pecas']:
+            html_content += f"<tr><td>{peca['peca_nome']}</td><td>{peca['quantidade']}</td><td style='text-align: right;'>R$ {peca['valor_unitario']:.2f}</td><td style='text-align: right;'>R$ {peca['valor_total']:.2f}</td></tr>"
+        html_content += "</tbody></table></div>"
+    
+    html_content += f"<div class='total-section'>VALOR TOTAL: R$ {orcamento['valor_total']:.2f}</div></body></html>"
+    
+    pdf_buffer = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return StreamingResponse(pdf_buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Orcamento-{orcamento['numero']}.pdf"})
+
 # ========== ROMANEIO ROUTES ==========
 @api_router.post("/romaneios", response_model=Romaneio)
 async def create_romaneio(data: RomaneioCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
