@@ -330,6 +330,9 @@ const ContasReceber = () => {
         <DialogContent className="max-w-2xl" data-testid="conta-modal">
           <DialogHeader>
             <DialogTitle>Nova Conta a Receber</DialogTitle>
+            <DialogDescription>
+              Preencha os dados para cadastrar uma nova conta a receber
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
