@@ -41,7 +41,7 @@ const ContasReceber = () => {
       
       const [contasRes, osRes, clientesRes] = await Promise.all([
         axios.get(`${API_URL}/api/financeiro/contas-receber`, { params }),
-        axios.get(`${API_URL}/api/os`),
+        axios.get(`${API_URL}/api/ordens-servico`),
         axios.get(`${API_URL}/api/clientes`)
       ]);
       
