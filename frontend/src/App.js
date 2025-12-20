@@ -108,9 +108,21 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/orcamentos/:id" element={
+            <PrivateRoute>
+              <ViewOrcamento />
+            </PrivateRoute>
+          } />
+          
           <Route path="/romaneio" element={
             <PrivateRoute>
               <Romaneio />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/romaneio/:id" element={
+            <PrivateRoute>
+              <ViewRomaneio />
             </PrivateRoute>
           } />
           
