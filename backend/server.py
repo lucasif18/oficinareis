@@ -666,80 +666,106 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
         "concluido": "Concluído"
     }
     
+    # Template otimizado para impressão A4
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 40px; }}
-            .header {{ text-align: center; margin-bottom: 40px; border-bottom: 2px solid #1e3a5f; padding-bottom: 20px; }}
-            .header h1 {{ color: #1e3a5f; margin: 0; font-size: 32px; }}
-            .header p {{ color: #666; margin: 5px 0; }}
-            .os-number {{ font-size: 24px; font-weight: bold; color: #1e3a5f; margin: 20px 0; }}
-            .section {{ margin: 30px 0; }}
-            .section-title {{ font-size: 18px; font-weight: bold; color: #1e3a5f; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }}
-            .info-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
-            .info-item {{ margin: 10px 0; }}
-            .info-label {{ color: #666; font-size: 12px; }}
-            .info-value {{ color: #000; font-weight: 500; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
-            th {{ background-color: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }}
-            td {{ padding: 10px; border-bottom: 1px solid #eee; }}
-            .total-section {{ margin-top: 30px; text-align: right; }}
-            .total-row {{ display: flex; justify-content: space-between; padding: 8px 0; }}
-            .total-label {{ font-weight: 500; }}
-            .total-value {{ font-family: monospace; font-weight: 600; }}
-            .grand-total {{ font-size: 20px; color: #1e3a5f; border-top: 2px solid #1e3a5f; padding-top: 15px; margin-top: 15px; }}
+            @page {{ size: A4; margin: 15mm; }}
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{ font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #333; line-height: 1.4; }}
+            
+            .header {{ display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 15px; }}
+            .logo {{ display: flex; align-items: center; gap: 10px; }}
+            .logo-icon {{ width: 50px; height: 50px; background: #f97316; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; }}
+            .logo-text h1 {{ font-size: 22px; color: #1e3a5f; margin: 0; font-weight: 800; }}
+            .logo-text p {{ font-size: 10px; color: #666; margin: 2px 0 0 0; }}
+            
+            .os-info {{ text-align: right; }}
+            .os-number {{ font-size: 20px; font-weight: 800; color: #1e3a5f; }}
+            .os-status {{ display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-top: 4px; }}
+            .status-pendente {{ background: #fef3c7; color: #92400e; }}
+            .status-andamento {{ background: #dbeafe; color: #1e40af; }}
+            .status-concluido {{ background: #d1fae5; color: #065f46; }}
+            
+            .info-row {{ display: flex; gap: 20px; margin-bottom: 15px; }}
+            .info-box {{ flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }}
+            .info-box h3 {{ font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }}
+            .info-box p {{ font-size: 12px; color: #1e293b; font-weight: 500; }}
+            .info-box .small {{ font-size: 10px; color: #64748b; font-weight: 400; }}
+            
+            .section {{ margin-bottom: 15px; }}
+            .section-title {{ font-size: 12px; font-weight: 700; color: #1e3a5f; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 8px; }}
+            
+            table {{ width: 100%; border-collapse: collapse; font-size: 10px; }}
+            thead {{ background: #1e3a5f; }}
+            th {{ color: white; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 9px; text-transform: uppercase; }}
+            th.right {{ text-align: right; }}
+            th.center {{ text-align: center; }}
+            td {{ padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }}
+            td.right {{ text-align: right; font-family: 'Courier New', monospace; }}
+            td.center {{ text-align: center; }}
+            tr:nth-child(even) {{ background: #f8fafc; }}
+            
+            .totals {{ margin-top: 15px; border-top: 2px solid #1e3a5f; padding-top: 12px; }}
+            .total-row {{ display: flex; justify-content: flex-end; padding: 4px 0; font-size: 11px; }}
+            .total-label {{ width: 150px; text-align: right; padding-right: 15px; color: #64748b; }}
+            .total-value {{ width: 100px; text-align: right; font-family: 'Courier New', monospace; font-weight: 600; }}
+            .grand-total {{ font-size: 16px; color: #1e3a5f; border-top: 2px solid #1e3a5f; padding-top: 8px; margin-top: 8px; }}
+            .grand-total .total-label {{ color: #1e3a5f; font-weight: 700; }}
+            .discount {{ color: #f97316; }}
+            
+            .footer {{ margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 9px; color: #64748b; text-align: center; }}
+            .footer-company {{ font-weight: 600; color: #1e3a5f; }}
+            
+            .signature-area {{ display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; }}
+            .signature-box {{ width: 45%; text-align: center; }}
+            .signature-line {{ border-top: 1px solid #333; padding-top: 5px; font-size: 10px; color: #64748b; }}
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>Oficina Reis</h1>
-            <p>Retificação de Motores</p>
+            <div class="logo">
+                <div class="logo-icon">R</div>
+                <div class="logo-text">
+                    <h1>Oficina Reis</h1>
+                    <p>Retificação de Motores</p>
+                </div>
+            </div>
+            <div class="os-info">
+                <div class="os-number">OS #{os['numero_fisico']}</div>
+                <div class="os-status status-{os['status']}">{status_labels.get(os['status'], os['status'])}</div>
+            </div>
         </div>
         
-        <div class="os-number">Ordem de Serviço #</div>{os['numero_fisico']}<div class="os-number">
-        <p>Status: {status_labels.get(os['status'], os['status'])}</p>
-        
-        <div class="section">
-            <div class="section-title">Cliente</div>
-            <div class="info-item">
-                <div class="info-value">{os['cliente_nome']}</div>
+        <div class="info-row">
+            <div class="info-box">
+                <h3>Cliente</h3>
+                <p>{os['cliente_nome']}</p>
+            </div>
+            <div class="info-box">
+                <h3>Veículo / Motor</h3>
+                <p>{os['veiculo_tipo']} - {os['veiculo_modelo']}</p>
+                <p class="small">Série: {os.get('veiculo_serie', '-')} | Categoria: {os['categoria'].capitalize()}</p>
+            </div>
+            <div class="info-box">
+                <h3>Data</h3>
+                <p>{os['criado_em'].strftime('%d/%m/%Y')}</p>
+                <p class="small">{'Concluído: ' + os['concluido_em'].strftime('%d/%m/%Y') if os.get('concluido_em') else ''}</p>
             </div>
         </div>
         
         <div class="section">
-            <div class="section-title">Veículo</div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Tipo</div>
-                    <div class="info-value">{os['veiculo_tipo']}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Modelo</div>
-                    <div class="info-value">{os['veiculo_modelo']}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Série/Potência</div>
-                    <div class="info-value">{os.get('veiculo_serie', '-')}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Categoria</div>
-                    <div class="info-value">{os['categoria'].capitalize()}</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-title">Serviços</div>
+            <div class="section-title">Serviços Realizados</div>
             <table>
                 <thead>
                     <tr>
                         <th>Setor</th>
                         <th>Serviço</th>
-                        <th>Funcionário</th>
-                        <th style="text-align: right;">Valor</th>
+                        <th>Responsável</th>
+                        <th class="right">Valor</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -751,7 +777,7 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
                         <td>{servico['setor']}</td>
                         <td>{servico['servico']}</td>
                         <td>{servico.get('funcionario_nome', '-')}</td>
-                        <td style="text-align: right;">R$ {servico['valor']:.2f}</td>
+                        <td class="right">R$ {servico['valor']:.2f}</td>
                     </tr>
         """
     
@@ -769,15 +795,84 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
                 <thead>
                     <tr>
                         <th>Peça</th>
-                        <th style="text-align: center;">Quantidade</th>
-                        <th style="text-align: right;">Valor Unit.</th>
-                        <th style="text-align: right;">Total</th>
+                        <th class="center">Qtd</th>
+                        <th class="right">Valor Unit.</th>
+                        <th class="right">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody>
         """
         
         for peca in os['pecas']:
+            html_content += f"""
+                    <tr>
+                        <td>{peca['peca_nome']}</td>
+                        <td class="center">{peca['quantidade']}</td>
+                        <td class="right">R$ {peca['valor_unitario']:.2f}</td>
+                        <td class="right">R$ {peca['valor_total']:.2f}</td>
+                    </tr>
+            """
+        
+        html_content += """
+                </tbody>
+            </table>
+        </div>
+        """
+    
+    html_content += f"""
+        <div class="totals">
+            <div class="total-row">
+                <span class="total-label">Serviços:</span>
+                <span class="total-value">R$ {os['valor_servicos']:.2f}</span>
+            </div>
+            <div class="total-row">
+                <span class="total-label">Peças:</span>
+                <span class="total-value">R$ {os['valor_pecas']:.2f}</span>
+            </div>
+    """
+    
+    if os['valor_desconto'] > 0:
+        html_content += f"""
+            <div class="total-row discount">
+                <span class="total-label">Desconto:</span>
+                <span class="total-value">- R$ {os['valor_desconto']:.2f}</span>
+            </div>
+        """
+    
+    html_content += f"""
+            <div class="total-row grand-total">
+                <span class="total-label">TOTAL:</span>
+                <span class="total-value">R$ {os['valor_total']:.2f}</span>
+            </div>
+        </div>
+        
+        <div class="signature-area">
+            <div class="signature-box">
+                <div class="signature-line">Assinatura do Cliente</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">Assinatura do Responsável</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-company">Eliezer Reis dos Santos & Cia Ltda</p>
+            <p>Av. Vereador João Silva - Andaia - Santo Antônio de Jesus/BA</p>
+            <p>Tel: (75) 3631-5946 | WhatsApp: (75) 98298-2509</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    pdf_buffer = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=OS-{os['numero_fisico']}.pdf"}
+    )
             html_content += f"""
                     <tr>
                         <td>{peca['peca_nome']}</td>
