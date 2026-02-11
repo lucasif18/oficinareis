@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Wrench, AlertCircle } from 'lucide-react';
+import { Wrench, AlertCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Login = () => {
@@ -90,9 +90,25 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-slate-600">
-            <p>Usuário demo:</p>
-            <p className="font-mono text-xs mt-1 text-slate-500">admin@oficinareis.com / admin123</p>
+          <div className="mt-6 space-y-3">
+            <div className="text-center">
+              <p className="text-sm text-slate-600">
+                Não tem uma conta?{' '}
+                <Link to="/cadastro" className="text-[#f97316] hover:text-[#ea580c] font-medium">
+                  Cadastre-se
+                </Link>
+              </p>
+            </div>
+            
+            <div className="border-t border-slate-200 pt-4">
+              <Link 
+                to="/consulta-os" 
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-[#1e3a5f] text-[#1e3a5f] rounded-md hover:bg-[#1e3a5f] hover:text-white transition-colors font-medium"
+              >
+                <Search className="w-4 h-4" />
+                Consultar Ordem de Serviço
+              </Link>
+            </div>
           </div>
         </div>
       </div>
