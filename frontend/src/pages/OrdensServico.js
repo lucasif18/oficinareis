@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Eye } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,14 +10,17 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const OrdensServico = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [ordens, setOrdens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
 
   // Funcionário não pode ver valores
   const canSeeValues = user?.role !== 'funcionario';
-  // Funcionário não pode criar OS
+  // Funcionário não pode criar/editar/excluir OS
   const canCreateOS = user?.role !== 'funcionario';
+  const canEditOS = user?.role === 'admin' || user?.role === 'motorista';
+  const canDeleteOS = user?.role === 'admin';
 
   useEffect(() => {
     fetchOrdens();
