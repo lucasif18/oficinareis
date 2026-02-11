@@ -10,7 +10,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from models import (
-    User, UserCreate, UserLogin, UserResponse,
+    User, UserCreate, UserLogin, UserResponse, UserRegister,
     Cliente, ClienteCreate,
     Peca, PecaCreate,
     Funcionario, FuncionarioCreate,
@@ -23,6 +23,13 @@ from models import (
     ContaReceber, ContaReceberCreate
 )
 from auth import hash_password, verify_password, create_access_token, get_current_user, require_role
+
+# Códigos de validação para cadastro
+CODIGOS_VALIDACAO = {
+    "admin": "ADM2024",
+    "funcionario": "FUNC2024",
+    "motorista": "MOTORISTA2024"
+}
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
