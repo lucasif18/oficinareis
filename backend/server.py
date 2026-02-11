@@ -95,6 +95,99 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return UserResponse(**user)
 
+# ========== REGISTRO PÚBLICO ==========
+@api_router.post("/auth/cadastro", status_code=201)
+async def cadastro_publico(data: UserRegister):
+    """Cadastro público de usuários com validação de código"""
+    # Verificar se email já existe
+    existing = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+    
+    # Validar código para roles que não são cliente
+    if data.role != "cliente":
+        codigo_esperado = CODIGOS_VALIDACAO.get(data.role)
+        if not data.codigo_validacao or data.codigo_validacao != codigo_esperado:
+            raise HTTPException(status_code=400, detail="Código de validação inválido")
+    
+    cliente_id = None
+    
+    # Se for cliente, criar também o registro de cliente
+    if data.role == "cliente":
+        if not data.cpf_cnpj or not data.telefone:
+            raise HTTPException(status_code=400, detail="CPF/CNPJ e telefone são obrigatórios para clientes")
+        
+        # Verificar se CPF/CNPJ já existe
+        cpf_cnpj_limpo = ''.join(filter(str.isdigit, data.cpf_cnpj))
+        existing_cliente = await db.clientes.find_one({"cpf_cnpj": cpf_cnpj_limpo}, {"_id": 0})
+        
+        if existing_cliente:
+            cliente_id = existing_cliente["id"]
+        else:
+            # Criar novo cliente
+            tipo = "PJ" if len(cpf_cnpj_limpo) == 14 else "PF"
+            cliente = Cliente(
+                tipo=tipo,
+                nome=data.nome,
+                cpf_cnpj=cpf_cnpj_limpo,
+                telefone=data.telefone,
+                email=data.email
+            )
+            doc_cliente = cliente.model_dump()
+            doc_cliente['criado_em'] = doc_cliente['criado_em'].isoformat()
+            await db.clientes.insert_one(doc_cliente)
+            cliente_id = cliente.id
+    
+    # Criar usuário
+    user = User(
+        nome=data.nome,
+        email=data.email,
+        senha_hash=hash_password(data.senha),
+        role=data.role,
+        cliente_id=cliente_id
+    )
+    doc = user.model_dump()
+    doc['criado_em'] = doc['criado_em'].isoformat()
+    await db.users.insert_one(doc)
+    
+    return {
+        "message": "Cadastro realizado com sucesso!",
+        "user": UserResponse(
+            id=user.id,
+            nome=user.nome,
+            email=user.email,
+            role=user.role,
+            ativo=user.ativo
+        )
+    }
+
+# ========== CONSULTA PÚBLICA DE OS (PARA CLIENTES) ==========
+@api_router.get("/consulta-os/{numero_fisico}")
+async def consulta_os_publica(numero_fisico: str):
+    """Consulta pública de OS pelo número - para clientes acompanharem"""
+    os = await db.ordens_servico.find_one({"numero_fisico": numero_fisico}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="Ordem de Serviço não encontrada")
+    
+    if isinstance(os.get('criado_em'), str):
+        os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+    if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+        os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+    
+    # Retornar dados relevantes para o cliente
+    return {
+        "numero_fisico": os["numero_fisico"],
+        "cliente_nome": os["cliente_nome"],
+        "veiculo_tipo": os["veiculo_tipo"],
+        "veiculo_modelo": os["veiculo_modelo"],
+        "status": os["status"],
+        "servicos": os["servicos"],
+        "pecas": os["pecas"],
+        "valor_total": os["valor_total"],
+        "criado_em": os["criado_em"].isoformat() if os.get("criado_em") else None,
+        "concluido_em": os["concluido_em"].isoformat() if os.get("concluido_em") else None
+    }
+
 # ========== DASHBOARD ROUTES ==========
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
