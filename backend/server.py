@@ -873,64 +873,6 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=OS-{os['numero_fisico']}.pdf"}
     )
-            html_content += f"""
-                    <tr>
-                        <td>{peca['peca_nome']}</td>
-                        <td style="text-align: center;">{peca['quantidade']}</td>
-                        <td style="text-align: right;">R$ {peca['valor_unitario']:.2f}</td>
-                        <td style="text-align: right;">R$ {peca['valor_total']:.2f}</td>
-                    </tr>
-            """
-        
-        html_content += """
-                </tbody>
-            </table>
-        </div>
-        """
-    
-    html_content += f"""
-        <div class="total-section">
-            <div class="total-row">
-                <div class="total-label">Subtotal Serviços:</div>
-                <div class="total-value">R$ {os['valor_servicos']:.2f}</div>
-            </div>
-            <div class="total-row">
-                <div class="total-label">Subtotal Peças:</div>
-                <div class="total-value">R$ {os['valor_pecas']:.2f}</div>
-            </div>
-    """
-    
-    if os['valor_desconto'] > 0:
-        html_content += f"""
-            <div class="total-row" style="color: #f97316;">
-                <div class="total-label">Desconto:</div>
-                <div class="total-value">- R$ {os['valor_desconto']:.2f}</div>
-            </div>
-        """
-    
-    html_content += f"""
-            <div class="total-row grand-total">
-                <div class="total-label">TOTAL:</div>
-                <div class="total-value">R$ {os['valor_total']:.2f}</div>
-            </div>
-        </div>
-        
-        <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
-            <p>Criado em: {os['criado_em'].strftime('%d/%m/%Y')}</p>
-        </div>
-    </body>
-    </html>
-    """
-    
-    pdf_buffer = io.BytesIO()
-    HTML(string=html_content).write_pdf(pdf_buffer)
-    pdf_buffer.seek(0)
-    
-    return StreamingResponse(
-        pdf_buffer,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=OS-{os['numero_fisico']}.pdf"}
-    )
 
 # ========== ORÇAMENTOS ROUTES ==========
 @api_router.post("/orcamentos", response_model=Orcamento)
