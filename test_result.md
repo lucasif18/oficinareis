@@ -1,10 +1,9 @@
 # THIS SECTION CONTAINS CRITICAL TESTING INSTRUCTIONS FOR BOTH AGENTS
-# BOTH MAIN_AGENT AND TESTING_AGENT MUST PRESERVE THIS ENTIRE BLOCK
 
-user_problem_statement: "Sistema de gestão Oficina Reis com 4 níveis de usuário (ADM, Motorista, Funcionário, Cliente) com restrições de acesso, códigos de validação para cadastro e página de consulta pública de OS"
+user_problem_statement: "Implementar edição e exclusão de OS, atualizar moldes de impressão PDF, criar página institucional com vídeos e história da empresa"
 
 backend:
-  - task: "API Cadastro Público com código de validação"
+  - task: "PUT /api/ordens-servico/{id} - Editar OS"
     implemented: true
     working: "NA"
     file: "/app/backend/server.py"
@@ -14,9 +13,9 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Endpoint POST /api/auth/cadastro com validação de códigos ADM2024, MOTORISTA2024, FUNC2024"
+        comment: "Endpoint para atualizar dados completos da OS"
 
-  - task: "API Consulta Pública de OS"
+  - task: "DELETE /api/ordens-servico/{id} - Excluir OS"
     implemented: true
     working: "NA"
     file: "/app/backend/server.py"
@@ -26,84 +25,66 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Endpoint GET /api/consulta-os/{numero_fisico} para consulta pública"
+        comment: "Endpoint para excluir OS e restaurar estoque de peças"
 
-frontend:
-  - task: "Página de Cadastro"
+  - task: "PDF de OS atualizado"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/pages/Cadastro.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Página com seleção de tipo de usuário e campos dinâmicos"
-
-  - task: "Página de Consulta OS"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/ConsultaOS.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Página pública para consultar OS pelo número"
-
-  - task: "Menu com restrições por role"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/components/Layout.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Menu filtrado baseado no role do usuário"
-
-  - task: "Login sem usuário demo"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/Login.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Removido usuário demo, adicionado links para cadastro e consulta"
-
-  - task: "OS sem valores para funcionário"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/pages/OrdensServico.js"
+    file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Oculta coluna de valor total para usuários funcionário"
+        comment: "Template de PDF profissional otimizado para impressão A4"
+
+frontend:
+  - task: "Página de Edição de OS"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/EditarOS.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Formulário completo para edição de OS existente"
+
+  - task: "Botões Editar/Excluir na lista de OS"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/OrdensServico.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Botões de ação com restrições por role"
+
+  - task: "Página Institucional"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Institucional.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Página completa com vídeo de fundo, história, serviços e contato WhatsApp"
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: true
 
 test_plan:
   current_focus:
-    - "Cadastro de usuário cliente"
-    - "Cadastro de usuário funcionário com código"
-    - "Consulta pública de OS"
-    - "Restrições de menu por role"
+    - "Página institucional carrega com vídeo"
+    - "Botões editar e excluir na lista de OS"
+    - "Navegação para página de edição"
   stuck_tasks: []
-
-# Incorporate User Feedback:
-# - Cliente não precisa de código de validação
-# - Funcionário/Motorista/Admin precisam de código específico
-# - Códigos: ADM2024, MOTORISTA2024, FUNC2024
