@@ -4,6 +4,8 @@ import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import Cadastro from './pages/Cadastro';
+import ConsultaOS from './pages/ConsultaOS';
 import Dashboard from './pages/Dashboard';
 import Clientes from './pages/Clientes';
 import Pecas from './pages/Pecas';
