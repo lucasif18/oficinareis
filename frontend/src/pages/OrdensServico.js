@@ -69,6 +69,24 @@ const OrdensServico = () => {
     }
   };
 
+  const handleDelete = async (id, numeroFisico) => {
+    if (!window.confirm(`Tem certeza que deseja excluir a OS #${numeroFisico}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API_URL}/api/ordens-servico/${id}`);
+      toast.success('Ordem de Serviço excluída com sucesso!');
+      fetchOrdens();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao excluir OS');
+    }
+  };
+
+  const handleEdit = (id) => {
+    navigate(`/ordens-servico/${id}/editar`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
