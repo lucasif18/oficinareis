@@ -73,12 +73,14 @@ const OrdensServico = () => {
           <h1 className="font-heading font-black text-4xl text-slate-900" data-testid="os-title">Ordens de Serviço</h1>
           <p className="text-slate-600 mt-2">Gerencie suas OS</p>
         </div>
-        <Link to="/ordens-servico/nova">
-          <Button className="bg-[#f97316] hover:bg-[#ea580c]" data-testid="nova-os-button">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova OS
-          </Button>
-        </Link>
+        {canCreateOS && (
+          <Link to="/ordens-servico/nova">
+            <Button className="bg-[#f97316] hover:bg-[#ea580c]" data-testid="nova-os-button">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova OS
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
