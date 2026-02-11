@@ -4,13 +4,20 @@ import { Plus, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const OrdensServico = () => {
+  const { user } = useAuth();
   const [ordens, setOrdens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
+
+  // Funcionário não pode ver valores
+  const canSeeValues = user?.role !== 'funcionario';
+  // Funcionário não pode criar OS
+  const canCreateOS = user?.role !== 'funcionario';
 
   useEffect(() => {
     fetchOrdens();
