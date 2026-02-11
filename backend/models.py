@@ -11,15 +11,27 @@ class User(BaseModel):
     nome: str
     email: str
     senha_hash: str
-    role: Literal["admin", "funcionario", "motorista"]
+    role: Literal["admin", "funcionario", "motorista", "cliente"]
     ativo: bool = True
     criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Para clientes - vincular ao cadastro de cliente
+    cliente_id: Optional[str] = None
 
 class UserCreate(BaseModel):
     nome: str
     email: str
     senha: str
-    role: Literal["admin", "funcionario", "motorista"]
+    role: Literal["admin", "funcionario", "motorista", "cliente"]
+
+class UserRegister(BaseModel):
+    nome: str
+    email: str
+    senha: str
+    role: Literal["admin", "funcionario", "motorista", "cliente"]
+    codigo_validacao: Optional[str] = None  # Não obrigatório para cliente
+    # Para clientes
+    cpf_cnpj: Optional[str] = None
+    telefone: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
