@@ -79,6 +79,9 @@ function App() {
           {/* Rota pública para consulta de OS */}
           <Route path="/consulta-os" element={<ConsultaOS />} />
           
+          {/* Página institucional - Página inicial pública */}
+          <Route path="/" element={<Institucional />} />
+          
           <Route path="/dashboard" element={
             <PrivateRoute>
               <Dashboard />
