@@ -68,6 +68,15 @@ function App() {
             </PublicRoute>
           } />
           
+          <Route path="/cadastro" element={
+            <PublicRoute>
+              <Cadastro />
+            </PublicRoute>
+          } />
+          
+          {/* Rota pública para consulta de OS */}
+          <Route path="/consulta-os" element={<ConsultaOS />} />
+          
           <Route path="/dashboard" element={
             <PrivateRoute>
               <Dashboard />
