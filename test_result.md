@@ -1,63 +1,10 @@
 # THIS SECTION CONTAINS CRITICAL TESTING INSTRUCTIONS FOR BOTH AGENTS
 # BOTH MAIN_AGENT AND TESTING_AGENT MUST PRESERVE THIS ENTIRE BLOCK
 
-# Communication Protocol:
-# If the `testing_agent` is available, main agent should delegate all testing tasks to it.
-#
-# You have access to a file called `test_result.md`. This file contains the complete testing state
-# and history, and is the primary means of communication between main and the testing agent.
-#
-# Main and testing agents must follow this exact format to maintain testing data. 
-# The testing data must be entered in yaml format Below is the data structure:
-# 
-## user_problem_statement: {problem_statement}
-## backend:
-##   - task: "Task name"
-##     implemented: true
-##     working: true  # or false or "NA"
-##     file: "file_path.py"
-##     stuck_count: 0
-##     priority: "high"  # or "medium" or "low"
-##     needs_retesting: false
-##     status_history:
-##         -working: true  # or false or "NA"
-##         -agent: "main"  # or "testing" or "user"
-##         -comment: "Detailed comment about status"
-##
-## frontend:
-##   - task: "Task name"
-##     implemented: true
-##     working: true  # or false or "NA"
-##     file: "file_path.js"
-##     stuck_count: 0
-##     priority: "high"  # or "medium" or "low"
-##     needs_retesting: false
-##     status_history:
-##         -working: true  # or false or "NA"
-##         -agent: "main"  # or "testing" or "user"
-##         -comment: "Detailed comment about status"
-##
-## metadata:
-##   created_by: "main_agent"
-##   version: "1.0"
-##   test_sequence: 0
-##   run_ui: false
-##
-## test_plan:
-##   current_focus:
-##     - "Task name 1"
-##     - "Task name 2"
-##   stuck_tasks:
-##     - "Task name with persistent issues"
-
-#====================================================================================================
-# Testing Data - Main Agent and testing sub agent both should log testing data below this section
-#====================================================================================================
-
-user_problem_statement: "Sistema de gestão Oficina Reis com módulo Financeiro completo: Fluxo de Caixa, Contas a Pagar, Contas a Receber (vinculado a OS concluídas) e DRE"
+user_problem_statement: "Sistema de gestão Oficina Reis com 4 níveis de usuário (ADM, Motorista, Funcionário, Cliente) com restrições de acesso, códigos de validação para cadastro e página de consulta pública de OS"
 
 backend:
-  - task: "API Contas a Pagar CRUD"
+  - task: "API Cadastro Público com código de validação"
     implemented: true
     working: "NA"
     file: "/app/backend/server.py"
@@ -67,9 +14,9 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Endpoints implementados para CRUD de contas a pagar"
+        comment: "Endpoint POST /api/auth/cadastro com validação de códigos ADM2024, MOTORISTA2024, FUNC2024"
 
-  - task: "API Contas a Receber CRUD"
+  - task: "API Consulta Pública de OS"
     implemented: true
     working: "NA"
     file: "/app/backend/server.py"
@@ -79,108 +26,84 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Endpoints implementados para CRUD de contas a receber"
-
-  - task: "API Fluxo de Caixa"
-    implemented: true
-    working: "NA"
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Endpoint GET para buscar fluxo de caixa"
-
-  - task: "API DRE"
-    implemented: true
-    working: "NA"
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Endpoint GET para buscar DRE por mês/ano"
+        comment: "Endpoint GET /api/consulta-os/{numero_fisico} para consulta pública"
 
 frontend:
-  - task: "Página Contas a Pagar"
+  - task: "Página de Cadastro"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/pages/ContasPagar.js"
+    file: "/app/frontend/src/pages/Cadastro.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Página com CRUD completo e filtros"
+        comment: "Página com seleção de tipo de usuário e campos dinâmicos"
 
-  - task: "Página Contas a Receber"
+  - task: "Página de Consulta OS"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/pages/ContasReceber.js"
+    file: "/app/frontend/src/pages/ConsultaOS.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Página com CRUD completo, vinculo a OS e importação de OS concluídas"
+        comment: "Página pública para consultar OS pelo número"
 
-  - task: "Página Fluxo de Caixa"
+  - task: "Menu com restrições por role"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/pages/FluxoCaixa.js"
+    file: "/app/frontend/src/components/Layout.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Página com visualização de entradas/saídas e filtro por período"
+        comment: "Menu filtrado baseado no role do usuário"
 
-  - task: "Página DRE"
+  - task: "Login sem usuário demo"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/pages/DRE.js"
+    file: "/app/frontend/src/pages/Login.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Página com demonstração de resultado detalhada e navegação por mês"
+        comment: "Removido usuário demo, adicionado links para cadastro e consulta"
 
-  - task: "Rotas do módulo Financeiro"
+  - task: "OS sem valores para funcionário"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/App.js"
+    file: "/app/frontend/src/pages/OrdensServico.js"
     stuck_count: 0
-    priority: "high"
+    priority: "medium"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Rotas adicionadas para fluxo-caixa, contas-pagar, contas-receber e dre"
+        comment: "Oculta coluna de valor total para usuários funcionário"
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: true
 
 test_plan:
   current_focus:
-    - "Página Contas a Receber"
-    - "Página Fluxo de Caixa"
-    - "Página DRE"
-    - "Navegação do módulo Financeiro"
+    - "Cadastro de usuário cliente"
+    - "Cadastro de usuário funcionário com código"
+    - "Consulta pública de OS"
+    - "Restrições de menu por role"
   stuck_tasks: []
 
 # Incorporate User Feedback:
-# - Contas a Receber deve mostrar OS concluídas disponíveis para cobrança
-# - Navegação pelos botões na página /financeiro deve funcionar
-# - Filtros e funcionalidades CRUD devem funcionar corretamente
+# - Cliente não precisa de código de validação
+# - Funcionário/Motorista/Admin precisam de código específico
+# - Códigos: ADM2024, MOTORISTA2024, FUNC2024
