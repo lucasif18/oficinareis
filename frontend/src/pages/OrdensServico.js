@@ -123,7 +123,7 @@ const OrdensServico = () => {
               <tbody className="divide-y divide-slate-100">
                 {ordens.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={canSeeValues ? "7" : "6"} className="px-4 py-8 text-center text-slate-500">
                       Nenhuma ordem de serviço encontrada
                     </td>
                   </tr>
@@ -148,11 +148,13 @@ const OrdensServico = () => {
                       <td className="px-4 py-3">
                         {getStatusBadge(os.status)}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="font-mono text-sm font-bold text-slate-900">
-                          R$ {os.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
+                      {canSeeValues && (
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-mono text-sm font-bold text-slate-900">
+                            R$ {os.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                      )}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <Link to={`/ordens-servico/${os.id}`}>
