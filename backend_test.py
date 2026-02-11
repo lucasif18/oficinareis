@@ -407,20 +407,22 @@ class OficinaReisAPITester:
                 print(f"   Sample OS: {concluded_os[0].get('numero_fisico')} - {concluded_os[0].get('cliente_nome')}")
 
     def run_all_tests(self):
-        """Run all financial module tests"""
-        print("🚀 Starting Financial Module API Tests")
+        """Run all tests for the new features"""
+        print("🚀 Starting Oficina Reis API Tests - New Features")
         print(f"Backend URL: {self.base_url}")
         
-        # Login first
-        if not self.test_login():
-            print("❌ Login failed, stopping tests")
+        # Test admin login
+        if not self.test_admin_login():
+            print("❌ Admin login failed, stopping tests")
             return False
         
-        # Test all endpoints
-        self.test_financeiro_endpoints()
-        self.test_contas_pagar_crud()
-        self.test_contas_receber_crud()
-        self.test_os_integration()
+        # Test new OS features
+        self.test_os_crud_operations()
+        self.test_delete_os_endpoint()
+        self.test_consulta_os_publica()
+        
+        # Test some existing endpoints to ensure they still work
+        self.test_basic_endpoints()
         
         # Print results
         print("\n" + "="*60)
@@ -443,6 +445,44 @@ class OficinaReisAPITester:
                     print(f"   Response: {test['response']}")
         
         return len(self.failed_tests) == 0
+
+    def test_basic_endpoints(self):
+        """Test basic endpoints to ensure system is working"""
+        print("\n" + "="*50)
+        print("TESTING BASIC ENDPOINTS")
+        print("="*50)
+        
+        # Test dashboard stats
+        self.run_test(
+            "Dashboard Stats",
+            "GET",
+            "api/dashboard/stats",
+            200
+        )
+        
+        # Test clientes list
+        self.run_test(
+            "Clientes List",
+            "GET",
+            "api/clientes",
+            200
+        )
+        
+        # Test funcionarios list
+        self.run_test(
+            "Funcionarios List",
+            "GET",
+            "api/funcionarios",
+            200
+        )
+        
+        # Test tabela precos list
+        self.run_test(
+            "Tabela Precos List",
+            "GET",
+            "api/tabela-precos",
+            200
+        )
 
 def main():
     tester = FinanceiroAPITester()
