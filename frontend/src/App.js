@@ -118,6 +118,12 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/ordens-servico/:id/editar" element={
+            <PrivateRoute>
+              <EditarOS />
+            </PrivateRoute>
+          } />
+          
           <Route path="/orcamentos" element={
             <PrivateRoute>
               <Orcamentos />
