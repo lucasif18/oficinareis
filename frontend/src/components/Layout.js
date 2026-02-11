@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   LayoutDashboard, Users, Package, FileText, FileCheck,
   Truck, UserCog, DollarSign, BarChart3, LogOut, Menu, X,
-  Wrench
+  Wrench, Receipt
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -13,18 +13,24 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Menu items com restrições por role
+  // admin: acesso total
+  // motorista: Romaneio, Clientes, Peças, OS, Orçamento, Contas a Receber (pendentes)
+  // funcionario: apenas OS (sem valores)
+  // cliente: redirecionado para consulta de OS
   const menuItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'funcionario', 'motorista'] },
-    { path: '/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'funcionario'] },
-    { path: '/pecas', icon: Package, label: 'Peças', roles: ['admin', 'funcionario'] },
-    { path: '/ordens-servico', icon: FileText, label: 'Ordens de Serviço', roles: ['admin', 'funcionario'] },
-    { path: '/orcamentos', icon: FileCheck, label: 'Orçamentos', roles: ['admin', 'funcionario'] },
-    { path: '/romaneio', icon: Truck, label: 'Romaneio', roles: ['admin', 'funcionario', 'motorista'] },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
+    { path: '/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'motorista'] },
+    { path: '/pecas', icon: Package, label: 'Peças', roles: ['admin', 'motorista'] },
+    { path: '/ordens-servico', icon: FileText, label: 'Ordens de Serviço', roles: ['admin', 'motorista', 'funcionario'] },
+    { path: '/orcamentos', icon: FileCheck, label: 'Orçamentos', roles: ['admin', 'motorista'] },
+    { path: '/romaneio', icon: Truck, label: 'Romaneio', roles: ['admin', 'motorista'] },
     { path: '/funcionarios', icon: UserCog, label: 'Funcionários', roles: ['admin'] },
     { path: '/motoristas', icon: Truck, label: 'Motoristas', roles: ['admin'] },
     { path: '/tabela-precos', icon: DollarSign, label: 'Tabela de Preços', roles: ['admin'] },
     { path: '/financeiro', icon: DollarSign, label: 'Financeiro', roles: ['admin'] },
-    { path: '/relatorios', icon: BarChart3, label: 'Relatórios', roles: ['admin', 'funcionario'] },
+    { path: '/financeiro/contas-receber', icon: Receipt, label: 'Contas a Receber', roles: ['motorista'] },
+    { path: '/relatorios', icon: BarChart3, label: 'Relatórios', roles: ['admin'] },
   ];
 
   const filteredMenu = menuItems.filter(item => 
@@ -34,6 +40,22 @@ const Layout = ({ children }) => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  // Se for cliente, redirecionar para consulta
+  if (user?.role === 'cliente') {
+    navigate('/consulta-os');
+    return null;
+  }
+
+  const getRoleLabel = (role) => {
+    const labels = {
+      admin: 'Administrador',
+      funcionario: 'Funcionário',
+      motorista: 'Motorista',
+      cliente: 'Cliente'
+    };
+    return labels[role] || role;
   };
 
   return (
@@ -69,7 +91,7 @@ const Layout = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                data-testid={`nav-${item.path.slice(1)}`}
+                data-testid={`nav-${item.path.slice(1).replace('/', '-')}`}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors
                   ${
@@ -94,7 +116,7 @@ const Layout = ({ children }) => {
             {sidebarOpen && (
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">{user?.nome}</p>
-                <p className="text-slate-400 text-xs capitalize">{user?.role}</p>
+                <p className="text-slate-400 text-xs">{getRoleLabel(user?.role)}</p>
               </div>
             )}
           </div>
