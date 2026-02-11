@@ -182,11 +182,32 @@ const OrdensServico = () => {
                             <button
                               className="p-2 text-slate-600 hover:text-[#f97316] hover:bg-slate-100 rounded-md transition-colors"
                               data-testid={`view-os-${os.id}`}
+                              title="Visualizar"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                           </Link>
-                          {os.status === 'pendente' && (
+                          {canEditOS && os.status !== 'concluido' && (
+                            <button
+                              onClick={() => handleEdit(os.id)}
+                              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                              data-testid={`edit-os-${os.id}`}
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canDeleteOS && (
+                            <button
+                              onClick={() => handleDelete(os.id, os.numero_fisico)}
+                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                              data-testid={`delete-os-${os.id}`}
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {os.status === 'pendente' && canCreateOS && (
                             <button
                               onClick={() => updateStatus(os.id, 'andamento')}
                               className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
@@ -195,7 +216,7 @@ const OrdensServico = () => {
                               Iniciar
                             </button>
                           )}
-                          {os.status === 'andamento' && (
+                          {os.status === 'andamento' && canCreateOS && (
                             <button
                               onClick={() => updateStatus(os.id, 'concluido')}
                               className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 transition-colors"
