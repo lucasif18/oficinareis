@@ -3,7 +3,7 @@ import sys
 from datetime import datetime, timedelta
 import json
 
-class FinanceiroAPITester:
+class OficinaReisAPITester:
     def __init__(self, base_url="https://carmgmt-8.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
