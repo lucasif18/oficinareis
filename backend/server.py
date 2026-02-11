@@ -579,6 +579,73 @@ async def update_os_status(os_id: str, status: str, current_user: dict = Depends
         raise HTTPException(status_code=404, detail="OS não encontrada")
     return {"message": "Status atualizado com sucesso"}
 
+@api_router.put("/ordens-servico/{os_id}")
+async def update_os(os_id: str, data: OrdemServicoCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    """Atualiza uma Ordem de Serviço existente"""
+    existing = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    cliente = await db.clientes.find_one({"id": data.cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    valor_servicos = sum(s.valor for s in data.servicos)
+    valor_pecas = sum(p.valor_total for p in data.pecas)
+    
+    if data.desconto_tipo == "percentual":
+        valor_desconto = (valor_servicos + valor_pecas) * (data.desconto_valor / 100)
+    else:
+        valor_desconto = data.desconto_valor
+    
+    valor_total = valor_servicos + valor_pecas - valor_desconto
+    
+    update_data = {
+        "numero_fisico": data.numero_fisico,
+        "cliente_id": data.cliente_id,
+        "cliente_nome": cliente["nome"],
+        "veiculo_tipo": data.veiculo_tipo,
+        "veiculo_modelo": data.veiculo_modelo,
+        "veiculo_serie": data.veiculo_serie,
+        "categoria": data.categoria,
+        "servicos": [s.model_dump() for s in data.servicos],
+        "pecas": [p.model_dump() for p in data.pecas],
+        "desconto_tipo": data.desconto_tipo,
+        "desconto_valor": data.desconto_valor,
+        "valor_servicos": valor_servicos,
+        "valor_pecas": valor_pecas,
+        "valor_desconto": valor_desconto,
+        "valor_total": valor_total
+    }
+    
+    await db.ordens_servico.update_one({"id": os_id}, {"$set": update_data})
+    
+    updated = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if isinstance(updated.get('criado_em'), str):
+        updated['criado_em'] = datetime.fromisoformat(updated['criado_em'])
+    if updated.get('concluido_em') and isinstance(updated['concluido_em'], str):
+        updated['concluido_em'] = datetime.fromisoformat(updated['concluido_em'])
+    return OrdemServico(**updated)
+
+@api_router.delete("/ordens-servico/{os_id}")
+async def delete_os(os_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    """Exclui uma Ordem de Serviço"""
+    existing = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    # Restaurar estoque das peças
+    for peca in existing.get('pecas', []):
+        await db.pecas.update_one(
+            {"id": peca["peca_id"]},
+            {"$inc": {"quantidade": peca["quantidade"]}}
+        )
+    
+    result = await db.ordens_servico.delete_one({"id": os_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    return {"message": "Ordem de Serviço excluída com sucesso"}
+
 @api_router.get("/ordens-servico/{os_id}/pdf")
 async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user)):
     from weasyprint import HTML
