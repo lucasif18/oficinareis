@@ -364,6 +364,7 @@ async def list_servicos_funcionario(
     
     pipeline.extend([
         {"$project": {
+            "_id": 0,
             "id": {"$concat": ["$id", "-", {"$toString": "$servico_index"}]},
             "os_id": "$id",
             "os_numero": "$numero_fisico",
