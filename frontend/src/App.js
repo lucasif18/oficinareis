@@ -28,6 +28,10 @@ import ContasPagar from './pages/ContasPagar';
 import ContasReceber from './pages/ContasReceber';
 import DRE from './pages/DRE';
 import Relatorios from './pages/Relatorios';
+import DashboardFuncionario from './pages/DashboardFuncionario';
+import ServicosFuncionario from './pages/ServicosFuncionario';
+import PecasFuncionario from './pages/PecasFuncionario';
+import ViewCliente from './pages/ViewCliente';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -205,6 +209,30 @@ function App() {
           <Route path="/relatorios" element={
             <PrivateRoute>
               <Relatorios />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/dashboard-funcionario" element={
+            <PrivateRoute>
+              <DashboardFuncionario />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/servicos" element={
+            <PrivateRoute>
+              <ServicosFuncionario />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/pecas-consulta" element={
+            <PrivateRoute>
+              <PecasFuncionario />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/clientes/:id" element={
+            <PrivateRoute>
+              <ViewCliente />
             </PrivateRoute>
           } />
           
