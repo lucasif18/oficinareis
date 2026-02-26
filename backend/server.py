@@ -230,7 +230,217 @@ async def get_recent_os(current_user: dict = Depends(get_current_user)):
     os_list = await db.ordens_servico.find({}, {"_id": 0}).sort("criado_em", -1).limit(10).to_list(10)
     return os_list
 
-# ========== CLIENTES ROUTES ==========
+# ========== DASHBOARD FUNCIONÁRIO (Restrito - sem valores) ==========
+@api_router.get("/dashboard/funcionario/stats")
+async def get_funcionario_stats(current_user: dict = Depends(get_current_user)):
+    # Pegar setor do funcionário
+    funcionario = await db.funcionarios.find_one({"nome": current_user.get("nome")}, {"_id": 0})
+    setor = funcionario.get("especialidade") if funcionario else None
+    
+    # Contar serviços do setor do funcionário
+    pipeline_disponiveis = [
+        {"$unwind": "$servicos"},
+        {"$match": {"status": {"$ne": "concluido"}, "servicos.status": {"$in": ["disponivel", None]}}},
+    ]
+    if setor:
+        pipeline_disponiveis.append({"$match": {"servicos.setor": setor}})
+    pipeline_disponiveis.append({"$count": "total"})
+    
+    result_disp = await db.ordens_servico.aggregate(pipeline_disponiveis).to_list(1)
+    
+    # Em andamento (pelo funcionário)
+    pipeline_andamento = [
+        {"$unwind": "$servicos"},
+        {"$match": {"servicos.status": "em_andamento", "servicos.funcionario_id": current_user.get("id")}},
+        {"$count": "total"}
+    ]
+    result_and = await db.ordens_servico.aggregate(pipeline_andamento).to_list(1)
+    
+    # Concluídos hoje
+    hoje = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    pipeline_concluidos = [
+        {"$unwind": "$servicos"},
+        {"$match": {"servicos.status": "concluido", "servicos.concluido_em": {"$gte": hoje.isoformat()}}},
+        {"$count": "total"}
+    ]
+    result_conc = await db.ordens_servico.aggregate(pipeline_concluidos).to_list(1)
+    
+    # Meus serviços
+    pipeline_meus = [
+        {"$unwind": "$servicos"},
+        {"$match": {"servicos.funcionario_id": current_user.get("id")}},
+        {"$count": "total"}
+    ]
+    result_meus = await db.ordens_servico.aggregate(pipeline_meus).to_list(1)
+    
+    return {
+        "servicos_disponiveis": result_disp[0]["total"] if result_disp else 0,
+        "servicos_em_andamento": result_and[0]["total"] if result_and else 0,
+        "servicos_concluidos_hoje": result_conc[0]["total"] if result_conc else 0,
+        "meus_servicos": result_meus[0]["total"] if result_meus else 0
+    }
+
+@api_router.get("/dashboard/funcionario/atividades")
+async def get_funcionario_atividades(current_user: dict = Depends(get_current_user)):
+    # Pegar setor do funcionário
+    funcionario = await db.funcionarios.find_one({"nome": current_user.get("nome")}, {"_id": 0})
+    setor = funcionario.get("especialidade") if funcionario else None
+    
+    pipeline = [
+        {"$unwind": "$servicos"},
+    ]
+    if setor:
+        pipeline.append({"$match": {"servicos.setor": setor}})
+    
+    pipeline.extend([
+        {"$sort": {"criado_em": -1}},
+        {"$limit": 20},
+        {"$project": {
+            "os_numero": "$numero_fisico",
+            "setor": "$servicos.setor",
+            "servico": "$servicos.servico",
+            "status": {"$ifNull": ["$servicos.status", "disponivel"]},
+            "data": "$criado_em"
+        }}
+    ])
+    
+    atividades = await db.ordens_servico.aggregate(pipeline).to_list(20)
+    return atividades
+
+# ========== SERVIÇOS FUNCIONÁRIO (com bloqueio/Observer) ==========
+@api_router.get("/servicos-funcionario")
+async def list_servicos_funcionario(
+    status: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    # Pegar setor do funcionário
+    funcionario = await db.funcionarios.find_one({"nome": current_user.get("nome")}, {"_id": 0})
+    setor = funcionario.get("especialidade") if funcionario else None
+    
+    pipeline = [
+        {"$match": {"status": {"$ne": "concluido"}}},
+        {"$unwind": {"path": "$servicos", "includeArrayIndex": "servico_index"}},
+    ]
+    
+    if setor:
+        pipeline.append({"$match": {"servicos.setor": setor}})
+    
+    if status:
+        status_filter = status if status != "disponivel" else {"$in": ["disponivel", None]}
+        pipeline.append({"$match": {"servicos.status": status_filter}})
+    
+    pipeline.extend([
+        {"$project": {
+            "id": {"$concat": ["$id", "-", {"$toString": "$servico_index"}]},
+            "os_id": "$id",
+            "os_numero": "$numero_fisico",
+            "cliente_nome": "$cliente_nome",
+            "setor": "$servicos.setor",
+            "servico": "$servicos.servico",
+            "status": {"$ifNull": ["$servicos.status", "disponivel"]},
+            "bloqueado_por": "$servicos.bloqueado_por",
+            "servico_index": 1
+        }},
+        {"$sort": {"os_numero": 1}}
+    ])
+    
+    servicos = await db.ordens_servico.aggregate(pipeline).to_list(100)
+    return servicos
+
+@api_router.post("/servicos-funcionario/{servico_id}/iniciar")
+async def iniciar_servico(servico_id: str, current_user: dict = Depends(get_current_user)):
+    # Extrair os_id e index do servico_id
+    parts = servico_id.rsplit("-", 1)
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="ID de serviço inválido")
+    
+    os_id, index = parts[0], int(parts[1])
+    
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    servicos = os.get("servicos", [])
+    if index >= len(servicos):
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+    
+    servico = servicos[index]
+    
+    # Verificar se já está bloqueado por outro funcionário (Observer Pattern)
+    if servico.get("bloqueado_por") and servico["bloqueado_por"] != current_user["id"]:
+        raise HTTPException(status_code=409, detail="Serviço já está sendo executado por outro funcionário")
+    
+    # Bloquear e iniciar o serviço
+    await db.ordens_servico.update_one(
+        {"id": os_id},
+        {"$set": {
+            f"servicos.{index}.status": "em_andamento",
+            f"servicos.{index}.bloqueado_por": current_user["id"],
+            f"servicos.{index}.funcionario_id": current_user["id"],
+            f"servicos.{index}.funcionario_nome": current_user["nome"],
+            f"servicos.{index}.iniciado_em": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Serviço iniciado com sucesso"}
+
+@api_router.post("/servicos-funcionario/{servico_id}/concluir")
+async def concluir_servico(servico_id: str, current_user: dict = Depends(get_current_user)):
+    parts = servico_id.rsplit("-", 1)
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="ID de serviço inválido")
+    
+    os_id, index = parts[0], int(parts[1])
+    
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    servicos = os.get("servicos", [])
+    if index >= len(servicos):
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+    
+    servico = servicos[index]
+    
+    # Verificar se é o funcionário correto
+    if servico.get("bloqueado_por") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Você não pode concluir este serviço")
+    
+    # Concluir o serviço
+    await db.ordens_servico.update_one(
+        {"id": os_id},
+        {"$set": {
+            f"servicos.{index}.status": "concluido",
+            f"servicos.{index}.concluido_em": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Serviço concluído com sucesso"}
+
+# ========== ENTRADA DE PEÇAS (Rápida) ==========
+@api_router.post("/pecas/{peca_id}/entrada")
+async def entrada_peca(peca_id: str, quantidade: int, current_user: dict = Depends(require_role(["admin", "motorista"]))):
+    peca = await db.pecas.find_one({"id": peca_id}, {"_id": 0})
+    if not peca:
+        raise HTTPException(status_code=404, detail="Peça não encontrada")
+    
+    nova_quantidade = peca["quantidade"] + quantidade
+    await db.pecas.update_one({"id": peca_id}, {"$set": {"quantidade": nova_quantidade}})
+    
+    # Registrar histórico de entrada
+    await db.historico_pecas.insert_one({
+        "peca_id": peca_id,
+        "peca_nome": peca["nome"],
+        "tipo": "entrada",
+        "quantidade": quantidade,
+        "quantidade_anterior": peca["quantidade"],
+        "quantidade_nova": nova_quantidade,
+        "usuario_id": current_user["id"],
+        "usuario_nome": current_user["nome"],
+        "data": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"message": "Entrada registrada com sucesso", "quantidade_atual": nova_quantidade}
 @api_router.post("/clientes", response_model=Cliente)
 async def create_cliente(data: ClienteCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
     cliente = Cliente(**data.model_dump())
