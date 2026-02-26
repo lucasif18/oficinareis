@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Play, CheckCircle, Clock, AlertCircle, Filter, RefreshCw } from 'lucide-react';
+import { Play, CheckCircle, Clock, AlertCircle, Filter, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -13,6 +13,9 @@ const ServicosFuncionario = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
 
   const fetchServicos = useCallback(async () => {
     try {
@@ -30,16 +33,83 @@ const ServicosFuncionario = () => {
     }
   }, [filterStatus]);
 
+  // Conectar WebSocket para atualizações em tempo real
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    
+    // Construir URL do WebSocket
+    const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    
+    try {
+      wsRef.current = new WebSocket(`${wsUrl}/ws/servicos`);
+      
+      wsRef.current.onopen = () => {
+        console.log('WebSocket conectado');
+        setWsConnected(true);
+        // Autenticar com user_id
+        if (user?.id) {
+          wsRef.current.send(JSON.stringify({ type: 'auth', user_id: user.id }));
+        }
+      };
+      
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('WebSocket mensagem:', data);
+          
+          if (data.type === 'servico_bloqueado' || data.type === 'servico_concluido') {
+            // Atualizar lista de serviços quando outro funcionário bloqueia/conclui
+            fetchServicos();
+            
+            if (data.type === 'servico_bloqueado' && data.bloqueado_por !== user?.id) {
+              toast.info(`Serviço selecionado por ${data.funcionario_nome}`);
+            }
+          }
+        } catch (e) {
+          console.error('Erro ao processar mensagem WS:', e);
+        }
+      };
+      
+      wsRef.current.onclose = () => {
+        console.log('WebSocket desconectado');
+        setWsConnected(false);
+        // Tentar reconectar após 3 segundos
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, 3000);
+      };
+      
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket erro:', error);
+        setWsConnected(false);
+      };
+    } catch (error) {
+      console.error('Erro ao criar WebSocket:', error);
+      setWsConnected(false);
+    }
+  }, [user?.id, fetchServicos]);
+
   useEffect(() => {
     fetchServicos();
+    connectWebSocket();
     
-    // Polling para atualizações em tempo real (Observer Pattern simplificado)
+    // Fallback: polling a cada 10 segundos caso WebSocket falhe
     const interval = setInterval(() => {
-      fetchServicos();
-    }, 5000); // Atualiza a cada 5 segundos
+      if (!wsConnected) {
+        fetchServicos();
+      }
+    }, 10000);
     
-    return () => clearInterval(interval);
-  }, [fetchServicos]);
+    return () => {
+      clearInterval(interval);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [fetchServicos, connectWebSocket, wsConnected]);
 
   const iniciarServico = async (servicoId) => {
     try {
@@ -94,24 +164,37 @@ const ServicosFuncionario = () => {
   };
 
   const servicosBloqueados = servicos.filter(s => s.bloqueado_por && s.bloqueado_por !== user?.id);
-  const servicosDisponiveis = servicos.filter(s => !s.bloqueado_por || s.bloqueado_por === user?.id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="servicos-funcionario-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading font-black text-4xl text-slate-900">Meus Serviços</h1>
           <p className="text-slate-600 mt-2">Selecione e execute serviços do seu setor</p>
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            {wsConnected ? (
+              <>
+                <Wifi className="w-4 h-4 text-emerald-500" />
+                <span className="text-emerald-600">Tempo real</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 text-slate-400" />
+                <span>Offline</span>
+              </>
+            )}
+          </div>
           <div className="text-xs text-slate-500">
             <RefreshCw className="w-3 h-3 inline mr-1" />
-            Atualizado: {lastUpdate.toLocaleTimeString('pt-BR')}
+            {lastUpdate.toLocaleTimeString('pt-BR')}
           </div>
           <Button
             onClick={fetchServicos}
             variant="outline"
             size="sm"
+            data-testid="refresh-servicos-btn"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
@@ -127,6 +210,7 @@ const ServicosFuncionario = () => {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+            data-testid="filter-status"
           >
             <option value="">Todos os status</option>
             <option value="disponivel">Disponíveis</option>
@@ -187,6 +271,7 @@ const ServicosFuncionario = () => {
                               ? 'bg-blue-50' 
                               : 'hover:bg-slate-50'
                         }`}
+                        data-testid={`servico-row-${servico.id}`}
                       >
                         <td className="px-4 py-3">
                           <span className="font-mono text-sm font-bold text-[#1e3a5f]">#{servico.os_numero}</span>
@@ -211,6 +296,7 @@ const ServicosFuncionario = () => {
                               <button
                                 onClick={() => iniciarServico(servico.id)}
                                 className="px-3 py-1.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 transition-colors flex items-center gap-1"
+                                data-testid={`iniciar-servico-${servico.id}`}
                               >
                                 <Play className="w-3 h-3" />
                                 Iniciar
@@ -220,6 +306,7 @@ const ServicosFuncionario = () => {
                               <button
                                 onClick={() => concluirServico(servico.id)}
                                 className="px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                data-testid={`concluir-servico-${servico.id}`}
                               >
                                 <CheckCircle className="w-3 h-3" />
                                 Concluir
