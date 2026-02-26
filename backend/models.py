@@ -237,6 +237,7 @@ class Romaneio(BaseModel):
     motorista_id: str
     motorista_nome: str
     os_ids: List[str] = []
+    entregas_confirmadas: List[str] = []  # IDs das OS já entregues
     data_entrega: datetime
     status: Literal["pendente", "em_rota", "concluido"] = "pendente"
     criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
