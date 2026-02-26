@@ -108,7 +108,7 @@ async def login(credentials: UserLogin):
     if not user.get("ativo", True):
         raise HTTPException(status_code=403, detail="Usuário inativo")
     
-    token = create_access_token(data={"sub": user["id"], "email": user["email"], "role": user["role"]})
+    token = create_access_token(data={"sub": user["id"], "email": user["email"], "role": user["role"], "nome": user["nome"]})
     return {
         "access_token": token,
         "token_type": "bearer",
