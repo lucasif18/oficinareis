@@ -762,10 +762,10 @@ async def delete_tabela_preco(tabela_id: str, current_user: dict = Depends(requi
     return {"message": "Serviço deletado com sucesso"}
 
 # ========== SETORES ROUTES ==========
-class SetorCreate(BaseModel):
+class SetorCreate(PydanticBaseModel):
     nome: str
 
-class SetorUpdate(BaseModel):
+class SetorUpdate(PydanticBaseModel):
     novo_nome: str
 
 @api_router.get("/setores")
