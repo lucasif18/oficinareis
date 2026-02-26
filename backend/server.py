@@ -329,6 +329,7 @@ async def get_funcionario_atividades(current_user: dict = Depends(get_current_us
         {"$sort": {"criado_em": -1}},
         {"$limit": 20},
         {"$project": {
+            "_id": 0,
             "os_numero": "$numero_fisico",
             "setor": "$servicos.setor",
             "servico": "$servicos.servico",
