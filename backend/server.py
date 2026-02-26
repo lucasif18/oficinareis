@@ -1705,6 +1705,33 @@ async def get_dre(
         "quantidade_os": len(os_mes)
     }
 
+# ========== WEBSOCKET ENDPOINT ==========
+@app.websocket("/ws/servicos")
+async def websocket_servicos(websocket: WebSocket):
+    """WebSocket para atualizações em tempo real dos serviços"""
+    # Gerar um ID temporário para conexões sem autenticação
+    import uuid
+    temp_id = str(uuid.uuid4())
+    
+    await ws_manager.connect(websocket, temp_id)
+    try:
+        while True:
+            # Receber mensagens do cliente (para keep-alive ou autenticação)
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                if message.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                elif message.get("type") == "auth" and message.get("user_id"):
+                    # Reconectar com user_id real
+                    ws_manager.disconnect(temp_id)
+                    await ws_manager.connect(websocket, message["user_id"])
+                    temp_id = message["user_id"]
+            except json.JSONDecodeError:
+                pass
+    except WebSocketDisconnect:
+        ws_manager.disconnect(temp_id)
+
 app.include_router(api_router)
 
 app.add_middleware(
