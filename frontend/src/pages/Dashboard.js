@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { FileText, Users, CheckCircle, Clock, AlertTriangle, FileCheck, TrendingUp } from 'lucide-react';
+import { FileText, Users, CheckCircle, Clock, AlertTriangle, FileCheck, TrendingUp, Bell, X, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
