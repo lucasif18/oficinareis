@@ -1385,6 +1385,35 @@ async def update_romaneio_status(
         raise HTTPException(status_code=404, detail="Romaneio não encontrado")
     return {"message": "Status atualizado com sucesso"}
 
+class ConfirmarEntregaRequest(BaseModel):
+    os_id: str
+    confirmado: bool
+
+@api_router.put("/romaneios/{romaneio_id}/confirmar-entrega")
+async def confirmar_entrega_romaneio(
+    romaneio_id: str,
+    request: ConfirmarEntregaRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    romaneio = await db.romaneios.find_one({"id": romaneio_id}, {"_id": 0})
+    if not romaneio:
+        raise HTTPException(status_code=404, detail="Romaneio não encontrado")
+    
+    entregas_confirmadas = romaneio.get("entregas_confirmadas", [])
+    
+    if request.confirmado:
+        if request.os_id not in entregas_confirmadas:
+            entregas_confirmadas.append(request.os_id)
+    else:
+        entregas_confirmadas = [eid for eid in entregas_confirmadas if eid != request.os_id]
+    
+    await db.romaneios.update_one(
+        {"id": romaneio_id},
+        {"$set": {"entregas_confirmadas": entregas_confirmadas}}
+    )
+    
+    return {"message": "Entrega atualizada com sucesso", "entregas_confirmadas": entregas_confirmadas}
+
 @api_router.get("/romaneios/os-disponiveis/list")
 async def list_os_disponiveis_romaneio(current_user: dict = Depends(get_current_user)):
     os_concluidas = await db.ordens_servico.find({"status": "concluido"}, {"_id": 0}).to_list(1000)
