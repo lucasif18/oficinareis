@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   LayoutDashboard, Users, Package, FileText, FileCheck,
   Truck, UserCog, DollarSign, BarChart3, LogOut, Menu, X,
-  Wrench, Receipt
+  Wrench, Receipt, Settings
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -16,13 +16,16 @@ const Layout = ({ children }) => {
   // Menu items com restrições por role
   // admin: acesso total
   // motorista: Romaneio, Clientes, Peças, OS, Orçamento, Contas a Receber (pendentes)
-  // funcionario: apenas OS (sem valores)
+  // funcionario: Dashboard restrito, Serviços (filtrado por setor), Peças (sem preços)
   // cliente: redirecionado para consulta de OS
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
+    { path: '/dashboard-funcionario', icon: LayoutDashboard, label: 'Dashboard', roles: ['funcionario'] },
     { path: '/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'motorista'] },
     { path: '/pecas', icon: Package, label: 'Peças', roles: ['admin', 'motorista'] },
-    { path: '/ordens-servico', icon: FileText, label: 'Ordens de Serviço', roles: ['admin', 'motorista', 'funcionario'] },
+    { path: '/pecas-consulta', icon: Package, label: 'Estoque', roles: ['funcionario'] },
+    { path: '/servicos', icon: Settings, label: 'Serviços', roles: ['funcionario'] },
+    { path: '/ordens-servico', icon: FileText, label: 'Ordens de Serviço', roles: ['admin', 'motorista'] },
     { path: '/orcamentos', icon: FileCheck, label: 'Orçamentos', roles: ['admin', 'motorista'] },
     { path: '/romaneio', icon: Truck, label: 'Romaneio', roles: ['admin', 'motorista'] },
     { path: '/funcionarios', icon: UserCog, label: 'Funcionários', roles: ['admin'] },
