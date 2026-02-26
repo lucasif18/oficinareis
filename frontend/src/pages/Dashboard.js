@@ -47,10 +47,86 @@ const Dashboard = () => {
   const [alerts, setAlerts] = useState(null);
   const [recentOS, setRecentOS] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef(null);
+
+  // Conectar WebSocket para notificações em tempo real
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    
+    const wsUrl = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    
+    try {
+      wsRef.current = new WebSocket(`${wsUrl}/ws/servicos`);
+      
+      wsRef.current.onopen = () => {
+        setWsConnected(true);
+      };
+      
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'servico_concluido') {
+            // Adicionar notificação quando um serviço é concluído
+            const newNotification = {
+              id: Date.now(),
+              type: 'servico_concluido',
+              message: `Serviço concluído por ${data.funcionario_nome}`,
+              timestamp: new Date(),
+              read: false
+            };
+            setNotifications(prev => [newNotification, ...prev].slice(0, 20));
+            
+            // Mostrar toast
+            toast.success(`Serviço concluído por ${data.funcionario_nome}!`, {
+              icon: <CheckCircle className="w-5 h-5 text-emerald-500" />
+            });
+            
+            // Atualizar dados do dashboard
+            fetchDashboardData();
+          }
+          
+          if (data.type === 'servico_bloqueado') {
+            const newNotification = {
+              id: Date.now(),
+              type: 'servico_iniciado',
+              message: `${data.funcionario_nome} iniciou um serviço`,
+              timestamp: new Date(),
+              read: false
+            };
+            setNotifications(prev => [newNotification, ...prev].slice(0, 20));
+          }
+        } catch (e) {
+          console.error('Erro ao processar mensagem WS:', e);
+        }
+      };
+      
+      wsRef.current.onclose = () => {
+        setWsConnected(false);
+        setTimeout(() => connectWebSocket(), 3000);
+      };
+      
+      wsRef.current.onerror = () => {
+        setWsConnected(false);
+      };
+    } catch (error) {
+      setWsConnected(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [connectWebSocket]);
 
   const fetchDashboardData = async () => {
     try {
