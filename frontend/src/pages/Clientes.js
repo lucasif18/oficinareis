@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Search, Edit, Trash2, User, Building } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Building, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -216,6 +217,14 @@ const Clientes = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
+                          <Link to={`/clientes/${cliente.id}`}>
+                            <button
+                              className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+                              data-testid={`view-cliente-${cliente.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </Link>
                           <button
                             onClick={() => openEditModal(cliente)}
                             className="p-2 text-slate-600 hover:text-[#f97316] hover:bg-slate-100 rounded-md transition-colors"
