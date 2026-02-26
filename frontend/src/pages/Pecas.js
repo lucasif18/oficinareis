@@ -267,6 +267,14 @@ const Pecas = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => openEntradaModal(peca)}
+                            className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-slate-100 rounded-md transition-colors"
+                            title="Entrada de estoque"
+                            data-testid={`entrada-peca-${peca.id}`}
+                          >
+                            <PackagePlus className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => openEditModal(peca)}
                             className="p-2 text-slate-600 hover:text-[#f97316] hover:bg-slate-100 rounded-md transition-colors"
                             data-testid={`edit-peca-${peca.id}`}
