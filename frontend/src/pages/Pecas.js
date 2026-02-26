@@ -91,6 +91,26 @@ const Pecas = () => {
     }
   };
 
+  const handleEntrada = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_URL}/api/pecas/${entradaPeca.id}/entrada?quantidade=${entradaQuantidade}`);
+      toast.success(`Entrada de ${entradaQuantidade} unidade(s) registrada com sucesso!`);
+      setShowEntradaModal(false);
+      setEntradaPeca(null);
+      setEntradaQuantidade(1);
+      fetchPecas();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao registrar entrada');
+    }
+  };
+
+  const openEntradaModal = (peca) => {
+    setEntradaPeca(peca);
+    setEntradaQuantidade(1);
+    setShowEntradaModal(true);
+  };
+
   const resetForm = () => {
     setFormData({
       nome: '',
