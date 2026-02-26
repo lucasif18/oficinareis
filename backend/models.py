@@ -173,6 +173,10 @@ class OrdemServico(BaseModel):
     numero_fisico: str
     cliente_id: str
     cliente_nome: str
+    cliente_tipo: Optional[str] = None
+    cliente_documento: Optional[str] = None
+    cliente_telefone: Optional[str] = None
+    cliente_email: Optional[str] = None
     veiculo_tipo: str
     veiculo_modelo: str
     veiculo_serie: Optional[str] = None
