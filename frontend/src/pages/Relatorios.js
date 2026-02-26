@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FileText, Users, DollarSign, Package, TrendingUp } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   LineChart,
@@ -14,7 +14,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts';
 
@@ -30,12 +29,17 @@ const Relatorios = () => {
   const [topClientes, setTopClientes] = useState([]);
   const [totalAFaturar, setTotalAFaturar] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear());
+
+  // Anos disponíveis para seleção (últimos 5 anos)
+  const anosDisponiveis = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [anoSelecionado]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [statsRes, osRes] = await Promise.all([
         axios.get(`${API_URL}/api/dashboard/stats`),
@@ -44,15 +48,22 @@ const Relatorios = () => {
       
       setStats(statsRes.data);
       const todasOS = osRes.data;
-      setOsData(todasOS);
+      
+      // Filtrar OS pelo ano selecionado
+      const osAno = todasOS.filter(os => {
+        const osDate = new Date(os.criado_em);
+        return osDate.getFullYear() === anoSelecionado;
+      });
+      
+      setOsData(osAno);
       
       // Calcular total a faturar (OS em andamento)
-      const osAndamento = todasOS.filter(os => os.status === 'andamento');
+      const osAndamento = osAno.filter(os => os.status === 'andamento');
       const totalFaturar = osAndamento.reduce((sum, os) => sum + os.valor_total, 0);
       setTotalAFaturar(totalFaturar);
       
       // Preparar dados para gráficos
-      processarDadosGraficos(todasOS);
+      processarDadosGraficos(osAno);
       
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -63,39 +74,30 @@ const Relatorios = () => {
   };
 
   const processarDadosGraficos = (osCompletas) => {
-    // Gráfico de OS por status
-    const statusCount = {
-      pendente: osCompletas.filter(os => os.status === 'pendente').length,
-      andamento: osCompletas.filter(os => os.status === 'andamento').length,
-      concluido: osCompletas.filter(os => os.status === 'concluido').length
-    };
-    
-    // Faturamento mensal (últimos 6 meses)
+    // Faturamento mensal (todos os 12 meses do ano selecionado)
     const mesesData = {};
-    const hoje = new Date();
+    const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     
-    for (let i = 5; i >= 0; i--) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().slice(2)}`;
-      mesesData[mesAno] = 0;
+    for (let i = 0; i < 12; i++) {
+      mesesData[mesesNomes[i]] = { valor: 0, quantidade: 0 };
     }
     
     osCompletas
       .filter(os => os.status === 'concluido')
       .forEach(os => {
-        if (os.concluido_em) {
-          const data = new Date(os.concluido_em);
-          const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().slice(2)}`;
-          if (mesesData[mesAno] !== undefined) {
-            mesesData[mesAno] += os.valor_total;
-          }
+        const data = new Date(os.concluido_em || os.criado_em);
+        if (data.getFullYear() === anoSelecionado) {
+          const mesIndex = data.getMonth();
+          mesesData[mesesNomes[mesIndex]].valor += os.valor_total;
+          mesesData[mesesNomes[mesIndex]].quantidade += 1;
         }
       });
     
     setFaturamentoMensal(
-      Object.entries(mesesData).map(([mes, valor]) => ({
+      Object.entries(mesesData).map(([mes, dados]) => ({
         mes,
-        valor: parseFloat(valor.toFixed(2))
+        valor: parseFloat(dados.valor.toFixed(2)),
+        quantidade: dados.quantidade
       }))
     );
     
@@ -145,21 +147,68 @@ const Relatorios = () => {
     { name: 'Concluído', value: osData.filter(os => os.status === 'concluido').length }
   ];
 
+  const faturamentoTotal = faturamentoMensal.reduce((sum, m) => sum + m.valor, 0);
+  const osTotal = faturamentoMensal.reduce((sum, m) => sum + m.quantidade, 0);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading font-black text-4xl text-slate-900" data-testid="relatorios-title">Relatórios</h1>
-        <p className="text-slate-600 mt-2">Análise de desempenho da oficina</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading font-black text-4xl text-slate-900" data-testid="relatorios-title">Relatórios</h1>
+          <p className="text-slate-600 mt-2">Análise de desempenho da oficina</p>
+        </div>
+        
+        {/* Seletor de Ano */}
+        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+          <Calendar className="w-5 h-5 text-[#f97316]" />
+          <select
+            value={anoSelecionado}
+            onChange={(e) => setAnoSelecionado(parseInt(e.target.value))}
+            className="font-bold text-lg text-[#1e3a5f] bg-transparent border-none focus:outline-none cursor-pointer"
+            data-testid="seletor-ano"
+          >
+            {anosDisponiveis.map(ano => (
+              <option key={ano} value={ano}>{ano}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      {/* Resumo do Ano */}
+      <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d4a6f] rounded-lg shadow-lg p-6 text-white">
+        <h2 className="text-lg font-medium mb-4">Resumo Anual - {anoSelecionado}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div>
+            <p className="text-white/70 text-sm">Faturamento Total</p>
+            <p className="font-heading font-black text-3xl">
+              R$ {faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div>
+            <p className="text-white/70 text-sm">Total de OS</p>
+            <p className="font-heading font-black text-3xl">{osData.length}</p>
+          </div>
+          <div>
+            <p className="text-white/70 text-sm">OS Concluídas</p>
+            <p className="font-heading font-black text-3xl">{osTotal}</p>
+          </div>
+          <div>
+            <p className="text-white/70 text-sm">Ticket Médio</p>
+            <p className="font-heading font-black text-3xl">
+              R$ {osTotal > 0 ? (faturamentoTotal / osTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
           <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3">
             <FileText className="w-6 h-6" />
           </div>
           <p className="text-white/80 text-sm mb-1">Total de OS</p>
-          <p className="font-heading font-black text-3xl">{stats?.total_os || 0}</p>
-          <p className="text-white/70 text-xs mt-2">no período</p>
+          <p className="font-heading font-black text-3xl">{osData.length}</p>
+          <p className="text-white/70 text-xs mt-2">em {anoSelecionado}</p>
         </div>
 
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg p-6 text-white">
@@ -168,8 +217,8 @@ const Relatorios = () => {
           </div>
           <p className="text-white/80 text-sm mb-1">Ticket Médio</p>
           <p className="font-heading font-black text-3xl">
-            R$ {stats?.total_os > 0 
-              ? ((stats?.faturamento_mes || 0) / stats.total_os).toFixed(0)
+            R$ {osTotal > 0 
+              ? (faturamentoTotal / osTotal).toFixed(0)
               : '0'
             }
           </p>
@@ -180,18 +229,9 @@ const Relatorios = () => {
           <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3">
             <TrendingUp className="w-6 h-6" />
           </div>
-          <p className="text-white/80 text-sm mb-1">OS Realizadas</p>
-          <p className="font-heading font-black text-3xl">{stats?.os_concluidas || 0}</p>
-          <p className="text-white/70 text-xs mt-2">concluídas</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
-          <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-3">
-            <FileText className="w-6 h-6" />
-          </div>
-          <p className="text-white/80 text-sm mb-1">OS Pendentes</p>
-          <p className="font-heading font-black text-3xl">{osData.filter(os => os.status === 'pendente').length}</p>
-          <p className="text-white/70 text-xs mt-2">0% do total</p>
+          <p className="text-white/80 text-sm mb-1">OS Concluídas</p>
+          <p className="font-heading font-black text-3xl">{osTotal}</p>
+          <p className="text-white/70 text-xs mt-2">finalizadas</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
@@ -208,7 +248,7 @@ const Relatorios = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <h2 className="font-heading font-bold text-xl text-slate-800 mb-4">Faturamento por Mês</h2>
+          <h2 className="font-heading font-bold text-xl text-slate-800 mb-4">Faturamento Mensal - {anoSelecionado}</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={faturamentoMensal}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -260,14 +300,14 @@ const Relatorios = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <h2 className="font-heading font-bold text-xl text-slate-800 mb-4">Quantidade de OS por Mês</h2>
+          <h2 className="font-heading font-bold text-xl text-slate-800 mb-4">Quantidade de OS por Mês - {anoSelecionado}</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={faturamentoMensal}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="mes" stroke="#64748b" style={{ fontSize: '12px' }} />
               <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
               <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-              <Bar dataKey="valor" fill="#1e3a5f" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="quantidade" fill="#1e3a5f" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -287,7 +327,7 @@ const Relatorios = () => {
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-        <h2 className="font-heading font-bold text-xl text-slate-800 mb-4">Top 5 Clientes por Faturamento</h2>
+        <h2 className="font-heading font-bold text-xl text-slate-800 mb-4">Top 5 Clientes por Faturamento - {anoSelecionado}</h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={topClientes}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -302,45 +342,25 @@ const Relatorios = () => {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-50 rounded-lg p-6 text-center border border-slate-200">
-          <p className="text-sm text-slate-500 mb-2">OS Concluídas</p>
-          <p className="font-heading font-black text-4xl text-slate-900">{stats?.os_concluidas || 0}</p>
-        </div>
-
-        <div className="bg-slate-50 rounded-lg p-6 text-center border border-slate-200">
-          <p className="text-sm text-slate-500 mb-2">Total Médio</p>
-          <p className="font-mono font-bold text-3xl text-slate-900">
-            R$ {stats?.total_os > 0 
-              ? ((stats?.faturamento_mes || 0) / stats.total_os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-              : '0,00'
-            }
-          </p>
-        </div>
-
-        <div className="bg-slate-50 rounded-lg p-6 text-center border border-slate-200">
-          <p className="text-sm text-slate-500 mb-2">Custo Médio por OS</p>
-          <p className="font-mono font-bold text-3xl text-slate-900">R$ 0,00</p>
-        </div>
-      </div>
-
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-6">
-        <h3 className="font-heading font-bold text-lg text-slate-800 mb-2">Análise Detalhada de Faturamento</h3>
+        <h3 className="font-heading font-bold text-lg text-slate-800 mb-2">Análise Detalhada de Faturamento - {anoSelecionado}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div>
-            <p className="text-sm text-slate-600 mb-1">Receita</p>
+            <p className="text-sm text-slate-600 mb-1">Receita Total</p>
             <p className="font-mono font-bold text-2xl text-emerald-600">
-              R$ {(stats?.faturamento_mes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </div>
           <div>
-            <p className="text-sm text-slate-600 mb-1">Despesas Operacionais</p>
-            <p className="font-mono font-bold text-2xl text-red-600">-R$ 0,00</p>
+            <p className="text-sm text-slate-600 mb-1">Média Mensal</p>
+            <p className="font-mono font-bold text-2xl text-blue-600">
+              R$ {(faturamentoTotal / 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
           </div>
           <div>
-            <p className="text-sm text-slate-600 mb-1">Receita Líquida</p>
-            <p className="font-mono font-bold text-2xl text-blue-600">
-              R$ {(stats?.faturamento_mes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <p className="text-sm text-slate-600 mb-1">Melhor Mês</p>
+            <p className="font-mono font-bold text-2xl text-[#f97316]">
+              {faturamentoMensal.reduce((max, m) => m.valor > max.valor ? m : max, { mes: '-', valor: 0 }).mes}
             </p>
           </div>
         </div>
