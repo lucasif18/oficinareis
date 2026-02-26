@@ -437,6 +437,69 @@ const Pecas = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Entrada Rápida */}
+      <Dialog open={showEntradaModal} onOpenChange={setShowEntradaModal}>
+        <DialogContent className="max-w-md" data-testid="entrada-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackagePlus className="w-5 h-5 text-emerald-600" />
+              Entrada de Estoque
+            </DialogTitle>
+          </DialogHeader>
+          {entradaPeca && (
+            <form onSubmit={handleEntrada} className="space-y-4">
+              <div className="bg-slate-50 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <Package className="w-8 h-8 text-slate-400" />
+                  <div>
+                    <p className="font-medium text-slate-900">{entradaPeca.nome}</p>
+                    <p className="text-sm text-slate-500">
+                      Código: {entradaPeca.codigo || 'N/A'} | 
+                      Estoque atual: <span className="font-mono font-bold">{entradaPeca.quantidade}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="entrada_quantidade">Quantidade a adicionar *</Label>
+                <Input
+                  id="entrada_quantidade"
+                  type="number"
+                  min="1"
+                  value={entradaQuantidade}
+                  onChange={(e) => setEntradaQuantidade(parseInt(e.target.value) || 1)}
+                  className="text-lg font-mono"
+                  data-testid="entrada-quantidade"
+                  required
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Novo estoque: <span className="font-bold text-emerald-600">{entradaPeca.quantidade + (entradaQuantidade || 0)}</span>
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowEntradaModal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  data-testid="confirmar-entrada-button"
+                >
+                  <PackagePlus className="w-4 h-4 mr-2" />
+                  Confirmar Entrada
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
