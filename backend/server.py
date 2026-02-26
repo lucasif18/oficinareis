@@ -415,6 +415,15 @@ async def iniciar_servico(servico_id: str, current_user: dict = Depends(get_curr
         }}
     )
     
+    # Notificar todos via WebSocket (Observer Pattern)
+    await ws_manager.broadcast({
+        "type": "servico_bloqueado",
+        "servico_id": servico_id,
+        "bloqueado_por": current_user["id"],
+        "funcionario_nome": current_user["nome"],
+        "status": "em_andamento"
+    })
+    
     return {"message": "Serviço iniciado com sucesso"}
 
 @api_router.post("/servicos-funcionario/{servico_id}/concluir")
@@ -447,6 +456,14 @@ async def concluir_servico(servico_id: str, current_user: dict = Depends(get_cur
             f"servicos.{index}.concluido_em": datetime.now(timezone.utc).isoformat()
         }}
     )
+    
+    # Notificar todos via WebSocket (Observer Pattern)
+    await ws_manager.broadcast({
+        "type": "servico_concluido",
+        "servico_id": servico_id,
+        "funcionario_nome": current_user["nome"],
+        "status": "concluido"
+    })
     
     return {"message": "Serviço concluído com sucesso"}
 
