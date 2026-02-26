@@ -1433,7 +1433,7 @@ async def update_romaneio_status(
         raise HTTPException(status_code=404, detail="Romaneio não encontrado")
     return {"message": "Status atualizado com sucesso"}
 
-class ConfirmarEntregaRequest(BaseModel):
+class ConfirmarEntregaRequest(PydanticBaseModel):
     os_id: str
     confirmado: bool
 
