@@ -131,6 +131,17 @@ const ViewOS = () => {
             <h2 className="font-heading font-bold text-lg text-slate-800 mb-3">Cliente</h2>
             <div className="space-y-1 text-sm">
               <p className="font-medium text-slate-900">{os.cliente_nome}</p>
+              {os.cliente_documento && (
+                <p className="text-slate-600">
+                  {os.cliente_tipo === 'pf' ? 'CPF' : 'CNPJ'}: {os.cliente_documento}
+                </p>
+              )}
+              {os.cliente_telefone && (
+                <p className="text-slate-600">Tel: {os.cliente_telefone}</p>
+              )}
+              {os.cliente_email && (
+                <p className="text-slate-600">{os.cliente_email}</p>
+              )}
             </div>
           </div>
           <div>
