@@ -389,7 +389,10 @@ async def iniciar_servico(servico_id: str, current_user: dict = Depends(get_curr
     if len(parts) != 2:
         raise HTTPException(status_code=400, detail="ID de serviço inválido")
     
-    os_id, index = parts[0], int(parts[1])
+    try:
+        os_id, index = parts[0], int(parts[1])
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de serviço inválido")
     
     os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
     if not os:
