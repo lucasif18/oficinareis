@@ -45,12 +45,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     payload = decode_token(token)
     user_id: str = payload.get("sub")
     user_role: str = payload.get("role")
+    user_nome: str = payload.get("nome")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas",
         )
-    return {"id": user_id, "role": user_role, "email": payload.get("email")}
+    return {"id": user_id, "role": user_role, "email": payload.get("email"), "nome": user_nome}
 
 def require_role(required_roles: list[str]):
     async def role_checker(current_user: dict = Depends(get_current_user)):
