@@ -43,6 +43,37 @@ db = client[os.environ['DB_NAME']]
 app = FastAPI(title="Oficina Reis API")
 api_router = APIRouter(prefix="/api")
 
+# ========== WEBSOCKET MANAGER (Observer Pattern) ==========
+class ConnectionManager:
+    """Gerenciador de conexões WebSocket para atualização em tempo real"""
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}  # user_id -> websocket
+    
+    async def connect(self, websocket: WebSocket, user_id: str):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+        logging.info(f"WebSocket conectado: {user_id}")
+    
+    def disconnect(self, user_id: str):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+            logging.info(f"WebSocket desconectado: {user_id}")
+    
+    async def broadcast(self, message: dict):
+        """Envia mensagem para todos os clientes conectados"""
+        disconnected = []
+        for user_id, connection in self.active_connections.items():
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logging.error(f"Erro ao enviar para {user_id}: {e}")
+                disconnected.append(user_id)
+        # Limpa conexões mortas
+        for user_id in disconnected:
+            self.disconnect(user_id)
+
+ws_manager = ConnectionManager()
+
 # ========== AUTH ROUTES ==========
 @api_router.post("/auth/register", response_model=UserResponse)
 async def register(user_data: UserCreate):
