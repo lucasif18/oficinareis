@@ -164,6 +164,17 @@ const Dashboard = () => {
     );
   };
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setShowNotifications(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -174,9 +185,99 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-heading font-black text-4xl text-slate-900" data-testid="dashboard-title">Dashboard</h1>
-        <p className="text-slate-600 mt-2">Bem-vindo ao sistema da Oficina Reis</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading font-black text-4xl text-slate-900" data-testid="dashboard-title">Dashboard</h1>
+          <p className="text-slate-600 mt-2">Bem-vindo ao sistema da Oficina Reis</p>
+        </div>
+        
+        {/* Notificações */}
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-2 rounded-lg bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors"
+            data-testid="notifications-button"
+          >
+            <Bell className="w-6 h-6 text-slate-600" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          
+          {/* Indicador de conexão */}
+          <div className="absolute -bottom-1 -left-1">
+            {wsConnected ? (
+              <Wifi className="w-3 h-3 text-emerald-500" />
+            ) : (
+              <WifiOff className="w-3 h-3 text-slate-400" />
+            )}
+          </div>
+          
+          {/* Painel de Notificações */}
+          {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg border border-slate-200 shadow-lg z-50" data-testid="notifications-panel">
+              <div className="p-3 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800">Notificações</h3>
+                <div className="flex gap-2">
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={markAllAsRead}
+                      className="text-xs text-[#f97316] hover:underline"
+                    >
+                      Marcar como lidas
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setShowNotifications(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-slate-500 text-sm">
+                    Nenhuma notificação
+                  </div>
+                ) : (
+                  notifications.map(notification => (
+                    <div 
+                      key={notification.id}
+                      className={`p-3 border-b border-slate-100 ${!notification.read ? 'bg-blue-50' : ''}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {notification.type === 'servico_concluido' ? (
+                          <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-blue-500 mt-0.5" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm text-slate-700">{notification.message}</p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {notification.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {notifications.length > 0 && (
+                <div className="p-2 border-t border-slate-200">
+                  <button 
+                    onClick={clearNotifications}
+                    className="w-full text-center text-sm text-slate-500 hover:text-slate-700"
+                  >
+                    Limpar todas
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
