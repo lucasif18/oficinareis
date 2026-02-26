@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel as PydanticBaseModel
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -7,6 +8,7 @@ import os
 import logging
 import json
 import asyncio
+import uuid
 from pathlib import Path
 from typing import List, Optional, Dict, Set
 from datetime import datetime, timezone
