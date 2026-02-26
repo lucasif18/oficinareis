@@ -759,6 +759,48 @@ async def delete_tabela_preco(tabela_id: str, current_user: dict = Depends(requi
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
     return {"message": "Serviço deletado com sucesso"}
 
+# ========== SETORES ROUTES ==========
+class SetorCreate(BaseModel):
+    nome: str
+
+class SetorUpdate(BaseModel):
+    novo_nome: str
+
+@api_router.get("/setores")
+async def list_setores(current_user: dict = Depends(get_current_user)):
+    setores = await db.setores.find({}, {"_id": 0}).to_list(100)
+    return setores
+
+@api_router.post("/setores")
+async def create_setor(data: SetorCreate, current_user: dict = Depends(require_role(["admin"]))):
+    existing = await db.setores.find_one({"nome": data.nome}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Setor já existe")
+    
+    setor = {"id": str(uuid.uuid4()), "nome": data.nome}
+    await db.setores.insert_one(setor)
+    return {"message": "Setor criado com sucesso", "nome": data.nome}
+
+@api_router.put("/setores/{setor_nome}")
+async def update_setor(setor_nome: str, data: SetorUpdate, current_user: dict = Depends(require_role(["admin"]))):
+    # Atualizar nome do setor na coleção de setores
+    result = await db.setores.update_one({"nome": setor_nome}, {"$set": {"nome": data.novo_nome}})
+    
+    # Também atualizar em todos os serviços da tabela de preços
+    await db.tabela_precos.update_many({"setor": setor_nome}, {"$set": {"setor": data.novo_nome}})
+    
+    return {"message": "Setor renomeado com sucesso"}
+
+@api_router.delete("/setores/{setor_nome}")
+async def delete_setor(setor_nome: str, current_user: dict = Depends(require_role(["admin"]))):
+    # Verificar se existem serviços com esse setor
+    servicos_count = await db.tabela_precos.count_documents({"setor": setor_nome})
+    if servicos_count > 0:
+        raise HTTPException(status_code=400, detail=f"Não é possível excluir o setor pois ele possui {servicos_count} serviço(s)")
+    
+    result = await db.setores.delete_one({"nome": setor_nome})
+    return {"message": "Setor excluído com sucesso"}
+
 # ========== ORDENS DE SERVIÇO ROUTES ==========
 @api_router.post("/ordens-servico", response_model=OrdemServico)
 async def create_os(data: OrdemServicoCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
