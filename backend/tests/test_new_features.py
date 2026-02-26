@@ -9,8 +9,6 @@ import pytest
 import requests
 import os
 import json
-import asyncio
-import websockets
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
