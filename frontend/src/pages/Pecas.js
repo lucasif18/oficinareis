@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Search, Edit, Trash2, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, AlertTriangle, Package, PackagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -20,6 +20,9 @@ const Pecas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showEntradaModal, setShowEntradaModal] = useState(false);
+  const [entradaPeca, setEntradaPeca] = useState(null);
+  const [entradaQuantidade, setEntradaQuantidade] = useState(1);
   const [editingPeca, setEditingPeca] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
