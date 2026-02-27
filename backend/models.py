@@ -189,7 +189,10 @@ class OrdemServico(BaseModel):
     valor_pecas: float
     valor_desconto: float
     valor_total: float
-    status: Literal["pendente", "andamento", "concluido"] = "pendente"
+    status: Literal["pendente", "andamento", "concluido", "enviando", "entregue"] = "pendente"
+    fotos: List[dict] = []  # Lista de fotos {tipo: 'antes'|'depois', url: str}
+    romaneio_id: Optional[str] = None
+    entregue: bool = False
     criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     concluido_em: Optional[datetime] = None
 
