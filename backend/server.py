@@ -1566,8 +1566,18 @@ async def confirmar_entrega_romaneio(
     if request.confirmado:
         if request.os_id not in entregas_confirmadas:
             entregas_confirmadas.append(request.os_id)
+            # Atualizar status da OS para 'entregue'
+            await db.ordens_servico.update_one(
+                {"id": request.os_id},
+                {"$set": {"status": "entregue", "entregue": True}}
+            )
     else:
         entregas_confirmadas = [eid for eid in entregas_confirmadas if eid != request.os_id]
+        # Reverter status da OS para 'enviando'
+        await db.ordens_servico.update_one(
+            {"id": request.os_id},
+            {"$set": {"status": "enviando", "entregue": False}}
+        )
     
     await db.romaneios.update_one(
         {"id": romaneio_id},
