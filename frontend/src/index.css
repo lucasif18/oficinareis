@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cores principais da Oficina Reis - Azul e Amarelo */
+:root {
+    --cor-primaria: #1e3a5f;      /* Azul escuro */
+    --cor-primaria-light: #2d5a8a; /* Azul claro */
+    --cor-secundaria: #f59e0b;     /* Amarelo/Dourado */
+    --cor-secundaria-hover: #d97706; /* Amarelo escuro */
+    --cor-accent: #fbbf24;         /* Amarelo brilhante */
+}
+
 body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -26,6 +35,14 @@ code {
 .font-mono {
     font-family: 'JetBrains Mono', monospace;
 }
+
+/* Classes de cor personalizadas */
+.bg-primary-blue { background-color: var(--cor-primaria); }
+.bg-primary-blue-light { background-color: var(--cor-primaria-light); }
+.bg-secondary-yellow { background-color: var(--cor-secundaria); }
+.text-primary-blue { color: var(--cor-primaria); }
+.text-secondary-yellow { color: var(--cor-secundaria); }
+.border-secondary-yellow { border-color: var(--cor-secundaria); }
 
 @layer base {
     :root {
