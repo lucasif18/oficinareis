@@ -169,12 +169,12 @@ const AreaCliente = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-[#f97316] rounded-lg flex items-center justify-center">
-              <Wrench className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 bg-[#f59e0b] rounded-lg flex items-center justify-center">
+              <Wrench className="w-10 h-10 text-[#1e3a5f]" />
             </div>
           </div>
           <h1 className="font-heading font-black text-4xl text-white">Portal do Cliente</h1>
-          <p className="text-slate-300 mt-2">Acompanhe o status da sua Ordem de Serviço em tempo real</p>
+          <p className="text-yellow-300 mt-2">Acompanhe o status da sua Ordem de Serviço em tempo real</p>
           {wsConnected && (
             <p className="text-emerald-400 text-xs mt-1 flex items-center justify-center gap-1">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
