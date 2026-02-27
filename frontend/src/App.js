@@ -223,6 +223,12 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/dashboard-motorista" element={
+            <PrivateRoute>
+              <DashboardMotorista />
+            </PrivateRoute>
+          } />
+          
           <Route path="/servicos" element={
             <PrivateRoute>
               <ServicosFuncionario />
