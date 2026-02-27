@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel as PydanticBaseModel
 from dotenv import load_dotenv
@@ -9,6 +9,7 @@ import logging
 import json
 import asyncio
 import uuid
+import base64
 from pathlib import Path
 from typing import List, Optional, Dict, Set
 from datetime import datetime, timezone
@@ -27,6 +28,45 @@ from models import (
     ContaReceber, ContaReceberCreate
 )
 from auth import hash_password, verify_password, create_access_token, get_current_user, require_role
+
+# ========== FUNÇÕES DE SANITIZAÇÃO DE VALORES ==========
+def sanitize_os_for_role(os_data: dict, role: str) -> dict:
+    """Remove campos de valor para funcionários e motoristas"""
+    if role in ['funcionario', 'motorista']:
+        campos_sensiveis = ['valor_servicos', 'valor_pecas', 'valor_desconto', 'valor_total']
+        for campo in campos_sensiveis:
+            if campo in os_data:
+                os_data[campo] = None
+        # Remover valores dos serviços
+        if 'servicos' in os_data:
+            for servico in os_data['servicos']:
+                if 'valor' in servico:
+                    servico['valor'] = None
+        # Remover valores das peças
+        if 'pecas' in os_data:
+            for peca in os_data['pecas']:
+                for campo in ['valor_unitario', 'valor_total']:
+                    if campo in peca:
+                        peca[campo] = None
+    return os_data
+
+def sanitize_peca_for_role(peca_data: dict, role: str) -> dict:
+    """Remove campos de preço para funcionários"""
+    if role == 'funcionario':
+        campos_sensiveis = ['preco_compra', 'preco_venda', 'preco']
+        for campo in campos_sensiveis:
+            if campo in peca_data:
+                peca_data[campo] = None
+    return peca_data
+
+def sanitize_dashboard_for_role(stats: dict, role: str) -> dict:
+    """Remove dados financeiros do dashboard para funcionários e motoristas"""
+    if role in ['funcionario', 'motorista']:
+        campos_sensiveis = ['faturamento_mes', 'ticket_medio', 'faturamento', 'lucro']
+        for campo in campos_sensiveis:
+            if campo in stats:
+                stats[campo] = None
+    return stats
 
 # Códigos de validação para cadastro
 CODIGOS_VALIDACAO = {
