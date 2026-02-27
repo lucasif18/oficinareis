@@ -1481,7 +1481,7 @@ async def gerar_pdf_orcamento(orcamento_id: str, current_user: dict = Depends(ge
 
 # ========== ROMANEIO ROUTES ==========
 @api_router.post("/romaneios", response_model=Romaneio)
-async def create_romaneio(data: RomaneioCreate, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+async def create_romaneio(data: RomaneioCreate, current_user: dict = Depends(require_role(["admin", "motorista"]))):
     motorista = await db.motoristas.find_one({"id": data.motorista_id}, {"_id": 0})
     if not motorista:
         raise HTTPException(status_code=404, detail="Motorista não encontrado")
@@ -1505,6 +1505,14 @@ async def create_romaneio(data: RomaneioCreate, current_user: dict = Depends(req
     doc['criado_em'] = doc['criado_em'].isoformat()
     doc['data_entrega'] = doc['data_entrega'].isoformat()
     await db.romaneios.insert_one(doc)
+    
+    # Atualizar status das OS para 'enviando'
+    for os_id in data.os_ids:
+        await db.ordens_servico.update_one(
+            {"id": os_id},
+            {"$set": {"status": "enviando", "romaneio_id": romaneio.id}}
+        )
+    
     return romaneio
 
 @api_router.get("/romaneios", response_model=List[Romaneio])
