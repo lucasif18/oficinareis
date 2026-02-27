@@ -1017,6 +1017,8 @@ async def list_os(
             os['criado_em'] = datetime.fromisoformat(os['criado_em'])
         if os.get('concluido_em') and isinstance(os['concluido_em'], str):
             os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+        # Sanitizar valores para funcionários e motoristas
+        sanitize_os_for_role(os, current_user.get('role', ''))
     return os_list
 
 @api_router.get("/ordens-servico/{os_id}", response_model=OrdemServico)
@@ -1028,6 +1030,8 @@ async def get_os(os_id: str, current_user: dict = Depends(get_current_user)):
         os['criado_em'] = datetime.fromisoformat(os['criado_em'])
     if os.get('concluido_em') and isinstance(os['concluido_em'], str):
         os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+    # Sanitizar valores para funcionários e motoristas
+    sanitize_os_for_role(os, current_user.get('role', ''))
     return OrdemServico(**os)
 
 @api_router.put("/ordens-servico/{os_id}/status")
