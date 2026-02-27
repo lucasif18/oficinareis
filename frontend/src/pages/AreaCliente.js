@@ -335,19 +335,58 @@ const AreaCliente = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Coluna Principal */}
                   <div className="lg:col-span-2 space-y-6">
-                    {/* Galeria de Fotos (se houver) */}
-                    {os.fotos && os.fotos.length > 0 && (
-                      <div>
-                        <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                          <Camera className="w-5 h-5 text-[#f97316]" />
-                          Galeria de Fotos
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
+                    {/* Galeria de Fotos - Relatório Visual de Qualidade */}
+                    <div className="bg-gradient-to-r from-blue-50 to-yellow-50 rounded-lg p-6 border border-slate-200">
+                      <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <Camera className="w-5 h-5 text-[#f59e0b]" />
+                        Relatório Visual de Qualidade
+                      </h3>
+                      {os.fotos && os.fotos.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-6">
                           {os.fotos.filter(f => f.tipo === 'antes').length > 0 && (
                             <div>
-                              <p className="text-xs font-medium text-slate-500 mb-2">ANTES (Recebimento)</p>
+                              <p className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wide">
+                                📷 Antes (Recebimento)
+                              </p>
                               <div className="grid grid-cols-2 gap-2">
                                 {os.fotos.filter(f => f.tipo === 'antes').map((foto, idx) => (
+                                  <img 
+                                    key={idx}
+                                    src={foto.url} 
+                                    alt={`Antes ${idx + 1}`}
+                                    className="w-full h-28 object-cover rounded-lg border border-slate-200 shadow-sm"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {os.fotos.filter(f => f.tipo === 'depois').length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wide">
+                                ✨ Depois (Finalizado)
+                              </p>
+                              <div className="grid grid-cols-2 gap-2">
+                                {os.fotos.filter(f => f.tipo === 'depois').map((foto, idx) => (
+                                  <img 
+                                    key={idx}
+                                    src={foto.url} 
+                                    alt={`Depois ${idx + 1}`}
+                                    className="w-full h-28 object-cover rounded-lg border border-slate-200 shadow-sm"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-32 bg-white/50 rounded-lg border border-dashed border-slate-300">
+                          <div className="text-center text-slate-400">
+                            <Camera className="w-8 h-8 mx-auto mb-2" />
+                            <p className="text-sm">Aguardando registro fotográfico do setor técnico</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                                   <img 
                                     key={idx}
                                     src={foto.url} 
