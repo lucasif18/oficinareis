@@ -387,34 +387,6 @@ const AreaCliente = () => {
                         </div>
                       )}
                     </div>
-                                  <img 
-                                    key={idx}
-                                    src={foto.url} 
-                                    alt={`Antes ${idx + 1}`}
-                                    className="w-full h-24 object-cover rounded-lg border border-slate-200"
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {os.fotos.filter(f => f.tipo === 'depois').length > 0 && (
-                            <div>
-                              <p className="text-xs font-medium text-slate-500 mb-2">DEPOIS (Finalizado)</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                {os.fotos.filter(f => f.tipo === 'depois').map((foto, idx) => (
-                                  <img 
-                                    key={idx}
-                                    src={foto.url} 
-                                    alt={`Depois ${idx + 1}`}
-                                    className="w-full h-24 object-cover rounded-lg border border-slate-200"
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
 
                     {/* Serviços */}
                     <div>
