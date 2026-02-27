@@ -734,6 +734,8 @@ async def list_pecas(
     for p in pecas:
         if isinstance(p.get('criado_em'), str):
             p['criado_em'] = datetime.fromisoformat(p['criado_em'])
+        # Sanitizar preços para funcionários
+        sanitize_peca_for_role(p, current_user.get('role', ''))
     return pecas
 
 @api_router.get("/pecas/{peca_id}", response_model=Peca)
@@ -743,6 +745,8 @@ async def get_peca(peca_id: str, current_user: dict = Depends(get_current_user))
         raise HTTPException(status_code=404, detail="Peça não encontrada")
     if isinstance(peca.get('criado_em'), str):
         peca['criado_em'] = datetime.fromisoformat(peca['criado_em'])
+    # Sanitizar preços para funcionários
+    sanitize_peca_for_role(peca, current_user.get('role', ''))
     return Peca(**peca)
 
 @api_router.put("/pecas/{peca_id}", response_model=Peca)
