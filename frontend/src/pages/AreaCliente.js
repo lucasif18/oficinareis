@@ -224,7 +224,7 @@ const AreaCliente = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-[#f97316] hover:bg-[#ea580c] text-white font-medium py-3 px-6 rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="bg-[#f59e0b] hover:bg-[#d97706] text-[#1e3a5f] font-bold py-3 px-6 rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               <Search className="w-5 h-5" />
               {loading ? 'Buscando...' : 'Consultar'}
