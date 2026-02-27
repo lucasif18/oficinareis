@@ -20,7 +20,7 @@ const TimelineStep = ({ label, icon: Icon, isActive, isCompleted, isPulsing, des
           ${isCompleted 
             ? 'bg-emerald-500 text-white' 
             : isActive 
-              ? `bg-[#f97316] text-white ${isPulsing ? 'animate-pulse shadow-lg shadow-orange-400/50' : ''}` 
+              ? `bg-[#f59e0b] text-[#1e3a5f] ${isPulsing ? 'animate-pulse shadow-lg shadow-yellow-400/50' : ''}` 
               : 'bg-slate-200 text-slate-400'
           }
         `}
