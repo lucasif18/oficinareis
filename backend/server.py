@@ -211,17 +211,123 @@ async def consulta_os_publica(numero_fisico: str):
     
     # Retornar dados relevantes para o cliente
     return {
+        "id": os.get("id"),
         "numero_fisico": os["numero_fisico"],
         "cliente_nome": os["cliente_nome"],
+        "cliente_tipo": os.get("cliente_tipo"),
+        "cliente_documento": os.get("cliente_documento"),
+        "cliente_telefone": os.get("cliente_telefone"),
+        "cliente_email": os.get("cliente_email"),
         "veiculo_tipo": os["veiculo_tipo"],
         "veiculo_modelo": os["veiculo_modelo"],
+        "veiculo_serie": os.get("veiculo_serie"),
+        "categoria": os.get("categoria"),
         "status": os["status"],
         "servicos": os["servicos"],
         "pecas": os["pecas"],
+        "valor_servicos": os.get("valor_servicos", 0),
+        "valor_pecas": os.get("valor_pecas", 0),
         "valor_total": os["valor_total"],
+        "fotos": os.get("fotos", []),
+        "romaneio_id": os.get("romaneio_id"),
+        "entregue": os.get("entregue", False),
         "criado_em": os["criado_em"].isoformat() if os.get("criado_em") else None,
         "concluido_em": os["concluido_em"].isoformat() if os.get("concluido_em") else None
     }
+
+@api_router.get("/consulta-os/cliente/{documento}")
+async def consulta_os_por_cliente(documento: str):
+    """Consulta pública de OS por CPF/CNPJ do cliente"""
+    # Limpar documento (remover formatação)
+    documento_limpo = ''.join(filter(str.isdigit, documento))
+    
+    # Buscar cliente pelo documento
+    cliente = await db.clientes.find_one(
+        {"cpf_cnpj": {"$regex": documento_limpo}}, 
+        {"_id": 0}
+    )
+    
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    # Buscar todas as OS do cliente
+    os_list = await db.ordens_servico.find(
+        {"cliente_id": cliente["id"]}, 
+        {"_id": 0}
+    ).sort("criado_em", -1).to_list(100)
+    
+    resultado = []
+    for os in os_list:
+        if isinstance(os.get('criado_em'), str):
+            os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+        if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+            os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+        
+        resultado.append({
+            "id": os.get("id"),
+            "numero_fisico": os["numero_fisico"],
+            "cliente_nome": os["cliente_nome"],
+            "cliente_tipo": os.get("cliente_tipo"),
+            "cliente_documento": os.get("cliente_documento"),
+            "cliente_telefone": os.get("cliente_telefone"),
+            "cliente_email": os.get("cliente_email"),
+            "veiculo_tipo": os["veiculo_tipo"],
+            "veiculo_modelo": os["veiculo_modelo"],
+            "veiculo_serie": os.get("veiculo_serie"),
+            "categoria": os.get("categoria"),
+            "status": os["status"],
+            "servicos": os["servicos"],
+            "pecas": os["pecas"],
+            "valor_servicos": os.get("valor_servicos", 0),
+            "valor_pecas": os.get("valor_pecas", 0),
+            "valor_total": os["valor_total"],
+            "fotos": os.get("fotos", []),
+            "romaneio_id": os.get("romaneio_id"),
+            "entregue": os.get("entregue", False),
+            "criado_em": os["criado_em"].isoformat() if os.get("criado_em") else None,
+            "concluido_em": os["concluido_em"].isoformat() if os.get("concluido_em") else None
+        })
+    
+    return resultado
+
+@api_router.get("/financeiro/inadimplentes")
+async def get_inadimplentes(current_user: dict = Depends(get_current_user)):
+    """Retorna lista de clientes com débitos em atraso > 30 dias"""
+    from datetime import timedelta
+    
+    data_limite = datetime.now(timezone.utc) - timedelta(days=30)
+    
+    # Buscar contas a receber pendentes e vencidas há mais de 30 dias
+    contas_atrasadas = await db.contas_receber.find({
+        "status": "pendente",
+        "data_vencimento": {"$lt": data_limite.isoformat()}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Agrupar por cliente
+    clientes_inadimplentes = {}
+    for conta in contas_atrasadas:
+        cliente_id = conta.get("cliente_id")
+        if cliente_id:
+            if cliente_id not in clientes_inadimplentes:
+                # Buscar dados do cliente
+                cliente = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+                if cliente:
+                    clientes_inadimplentes[cliente_id] = {
+                        "nome": cliente.get("nome", "N/A"),
+                        "telefone": cliente.get("telefone", "N/A"),
+                        "valor": 0
+                    }
+            if cliente_id in clientes_inadimplentes:
+                clientes_inadimplentes[cliente_id]["valor"] += conta.get("valor", 0)
+    
+    # Converter para lista ordenada por valor
+    resultado = sorted(
+        list(clientes_inadimplentes.values()), 
+        key=lambda x: x["valor"], 
+        reverse=True
+    )
+    
+    return resultado
 
 # ========== DASHBOARD ROUTES ==========
 @api_router.get("/dashboard/stats")
