@@ -184,11 +184,11 @@ class OrdemServico(BaseModel):
     servicos: List[ServicoOS] = []
     pecas: List[PecaOS] = []
     desconto_tipo: Literal["percentual", "fixo"] = "fixo"
-    desconto_valor: float = 0.0
-    valor_servicos: float
-    valor_pecas: float
-    valor_desconto: float
-    valor_total: float
+    desconto_valor: Optional[float] = 0.0  # Optional to support sanitization
+    valor_servicos: Optional[float] = None  # Optional to support sanitization for funcionarios/motoristas
+    valor_pecas: Optional[float] = None  # Optional to support sanitization
+    valor_desconto: Optional[float] = None  # Optional to support sanitization
+    valor_total: Optional[float] = None  # Optional to support sanitization
     status: Literal["pendente", "andamento", "concluido", "enviando", "entregue"] = "pendente"
     fotos: List[dict] = []  # Lista de fotos {tipo: 'antes'|'depois', url: str}
     romaneio_id: Optional[str] = None
