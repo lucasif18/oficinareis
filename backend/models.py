@@ -157,14 +157,14 @@ class ServicoOS(BaseModel):
     servico: str
     funcionario_id: Optional[str] = None
     funcionario_nome: Optional[str] = None
-    valor: float
+    valor: Optional[float] = None  # Optional to support sanitization for funcionarios/motoristas
 
 class PecaOS(BaseModel):
     peca_id: str
     peca_nome: str
     quantidade: int
-    valor_unitario: float
-    valor_total: float
+    valor_unitario: Optional[float] = None  # Optional to support sanitization
+    valor_total: Optional[float] = None  # Optional to support sanitization
 
 class OrdemServico(BaseModel):
     model_config = ConfigDict(extra="ignore")
