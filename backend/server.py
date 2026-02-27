@@ -1116,6 +1116,114 @@ async def delete_os(os_id: str, current_user: dict = Depends(require_role(["admi
         raise HTTPException(status_code=404, detail="OS não encontrada")
     return {"message": "Ordem de Serviço excluída com sucesso"}
 
+# ========== UPLOAD DE FOTOS DA OS (APENAS ADM) ==========
+class FotoUpload(PydanticBaseModel):
+    tipo: str  # 'antes' ou 'depois'
+    imagem_base64: str  # Base64 da imagem
+    descricao: Optional[str] = None
+
+@api_router.post("/ordens-servico/{os_id}/fotos")
+async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depends(require_role(["admin"]))):
+    """Upload de foto da OS - Apenas ADM pode fazer upload"""
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    if data.tipo not in ['antes', 'depois']:
+        raise HTTPException(status_code=400, detail="Tipo deve ser 'antes' ou 'depois'")
+    
+    # Criar objeto da foto
+    foto = {
+        "id": str(uuid.uuid4()),
+        "tipo": data.tipo,
+        "url": data.imagem_base64,  # Base64 string
+        "descricao": data.descricao,
+        "data_upload": datetime.now(timezone.utc).isoformat(),
+        "upload_por": current_user.get('nome', 'Admin')
+    }
+    
+    # Adicionar ao array de fotos
+    fotos = os.get('fotos', [])
+    fotos.append(foto)
+    
+    await db.ordens_servico.update_one(
+        {"id": os_id},
+        {"$set": {"fotos": fotos}}
+    )
+    
+    return {"message": "Foto adicionada com sucesso", "foto_id": foto["id"]}
+
+@api_router.delete("/ordens-servico/{os_id}/fotos/{foto_id}")
+async def delete_foto_os(os_id: str, foto_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    """Remove foto da OS - Apenas ADM"""
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    fotos = os.get('fotos', [])
+    fotos = [f for f in fotos if f.get('id') != foto_id]
+    
+    await db.ordens_servico.update_one(
+        {"id": os_id},
+        {"$set": {"fotos": fotos}}
+    )
+    
+    return {"message": "Foto removida com sucesso"}
+
+# ========== WHATSAPP NOTIFICATION ==========
+@api_router.get("/ordens-servico/{os_id}/whatsapp-link")
+async def get_whatsapp_link(os_id: str, current_user: dict = Depends(get_current_user)):
+    """Gera link do WhatsApp para notificação do cliente"""
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    cliente_telefone = os.get('cliente_telefone', '')
+    cliente_nome = os.get('cliente_nome', 'Cliente')
+    numero_os = os.get('numero_fisico', os_id)
+    status = os.get('status', 'pendente')
+    
+    # Labels de status
+    status_labels = {
+        'pendente': 'Recebido',
+        'andamento': 'Retífica',
+        'concluido': 'Pronto para Entrega',
+        'enviando': 'Em Trânsito',
+        'entregue': 'Entregue'
+    }
+    status_texto = status_labels.get(status, status.title())
+    
+    # Limpar telefone (apenas números)
+    telefone_limpo = ''.join(filter(str.isdigit, cliente_telefone))
+    if telefone_limpo and not telefone_limpo.startswith('55'):
+        telefone_limpo = '55' + telefone_limpo
+    
+    # Montar mensagem
+    portal_url = "https://employee-tasks-5.preview.emergentagent.com/area-cliente"
+    mensagem = f"""Olá {cliente_nome}! 👋
+
+🔧 *Oficina Reis* informa:
+
+Sua OS *#{numero_os}* acaba de entrar na etapa: *{status_texto}*
+
+📱 Acompanhe o progresso em tempo real:
+{portal_url}
+
+Qualquer dúvida, estamos à disposição!
+Obrigado pela confiança. 🙏"""
+    
+    # Codificar mensagem para URL
+    import urllib.parse
+    mensagem_encoded = urllib.parse.quote(mensagem)
+    
+    whatsapp_link = f"https://wa.me/{telefone_limpo}?text={mensagem_encoded}"
+    
+    return {
+        "whatsapp_link": whatsapp_link,
+        "telefone": telefone_limpo,
+        "mensagem": mensagem
+    }
+
 @api_router.get("/ordens-servico/{os_id}/pdf")
 async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user)):
     from weasyprint import HTML
