@@ -100,8 +100,8 @@ const Layout = ({ children }) => {
                   flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors
                   ${
                     isActive
-                      ? 'bg-white/10 text-white'
-                      : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#f59e0b] text-[#1e3a5f] font-semibold'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
                   }
                 `}
               >
@@ -112,9 +112,9 @@ const Layout = ({ children }) => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-yellow-500/30">
           <div className={`flex items-center gap-3 mb-3 ${!sidebarOpen && 'justify-center'}`}>
-            <div className="w-8 h-8 bg-[#f97316] rounded-full flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-8 h-8 bg-[#f59e0b] rounded-full flex items-center justify-center text-[#1e3a5f] font-bold text-sm">
               {user?.nome?.charAt(0).toUpperCase()}
             </div>
             {sidebarOpen && (
