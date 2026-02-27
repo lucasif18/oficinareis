@@ -15,12 +15,13 @@ const Layout = ({ children }) => {
 
   // Menu items com restrições por role
   // admin: acesso total
-  // motorista: Romaneio, Clientes, Peças, OS, Orçamento, Contas a Receber (pendentes)
+  // motorista: Dashboard do Motorista, Romaneio, Clientes, Peças, OS, Orçamento, Contas a Receber
   // funcionario: Dashboard restrito, Serviços (filtrado por setor), Peças (sem preços)
   // cliente: redirecionado para consulta de OS
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
     { path: '/dashboard-funcionario', icon: LayoutDashboard, label: 'Dashboard', roles: ['funcionario'] },
+    { path: '/dashboard-motorista', icon: LayoutDashboard, label: 'Dashboard', roles: ['motorista'] },
     { path: '/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'motorista'] },
     { path: '/pecas', icon: Package, label: 'Peças', roles: ['admin', 'motorista'] },
     { path: '/pecas-consulta', icon: Package, label: 'Estoque', roles: ['funcionario'] },
