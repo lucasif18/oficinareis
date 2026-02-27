@@ -69,20 +69,20 @@ const Layout = ({ children }) => {
           sidebarOpen ? 'w-64' : 'w-20'
         } bg-[#1e3a5f] text-slate-300 transition-all duration-300 flex flex-col`}
       >
-        <div className="p-6 flex items-center justify-between border-b border-white/10">
+        <div className="p-6 flex items-center justify-between border-b border-yellow-500/30">
           {sidebarOpen ? (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#f97316] rounded-lg flex items-center justify-center">
-                <Wrench className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-[#f59e0b] rounded-lg flex items-center justify-center">
+                <Wrench className="w-6 h-6 text-[#1e3a5f]" />
               </div>
               <div>
                 <h1 className="font-heading font-black text-white text-lg">Oficina Reis</h1>
-                <p className="text-xs text-slate-400">Retificação de Motores</p>
+                <p className="text-xs text-yellow-400">Retificação de Motores</p>
               </div>
             </div>
           ) : (
-            <div className="w-10 h-10 bg-[#f97316] rounded-lg flex items-center justify-center mx-auto">
-              <Wrench className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-[#f59e0b] rounded-lg flex items-center justify-center mx-auto">
+              <Wrench className="w-6 h-6 text-[#1e3a5f]" />
             </div>
           )}
         </div>
