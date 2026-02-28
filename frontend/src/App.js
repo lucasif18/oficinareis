@@ -231,6 +231,24 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/dashboard-cliente" element={
+            <PrivateRoute>
+              <DashboardCliente />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/minhas-os" element={
+            <PrivateRoute>
+              <MinhasOS />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/minhas-os/:id" element={
+            <PrivateRoute>
+              <MinhasOS />
+            </PrivateRoute>
+          } />
+          
           <Route path="/servicos" element={
             <PrivateRoute>
               <ServicosFuncionario />
