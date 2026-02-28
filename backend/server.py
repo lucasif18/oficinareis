@@ -1308,6 +1308,8 @@ Obrigado pela confiança. 🙏"""
 async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user)):
     from weasyprint import HTML
     import io
+    import qrcode
+    from io import BytesIO
     
     os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
     if not os:
@@ -1321,10 +1323,25 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
     status_labels = {
         "pendente": "Pendente",
         "andamento": "Em Andamento",
-        "concluido": "Concluído"
+        "concluido": "Concluído",
+        "enviando": "Em Trânsito",
+        "entregue": "Entregue"
     }
     
-    # Template otimizado para impressão A4
+    # Gerar QR Code para o Portal do Cliente
+    portal_url = f"https://motor-workshop-test.preview.emergentagent.com/area-cliente"
+    qr = qrcode.QRCode(version=1, box_size=10, border=2)
+    qr.add_data(portal_url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="#1e3a5f", back_color="white")
+    
+    # Converter QR Code para base64
+    qr_buffer = BytesIO()
+    qr_img.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+    qr_base64 = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
+    
+    # Template otimizado para impressão A4 (SEM FOTOS - apenas dados textuais)
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -1347,6 +1364,8 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
             .status-pendente {{ background: #fef3c7; color: #92400e; }}
             .status-andamento {{ background: #dbeafe; color: #1e40af; }}
             .status-concluido {{ background: #d1fae5; color: #065f46; }}
+            .status-enviando {{ background: #dbeafe; color: #1e40af; }}
+            .status-entregue {{ background: #d1fae5; color: #065f46; }}
             
             .info-row {{ display: flex; gap: 20px; margin-bottom: 15px; }}
             .info-box {{ flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }}
@@ -1378,9 +1397,15 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
             .footer {{ margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 9px; color: #64748b; text-align: center; }}
             .footer-company {{ font-weight: 600; color: #1e3a5f; }}
             
-            .signature-area {{ display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; }}
-            .signature-box {{ width: 45%; text-align: center; }}
+            .signature-area {{ display: flex; justify-content: space-between; margin-top: 30px; padding-top: 15px; }}
+            .signature-box {{ width: 40%; text-align: center; }}
             .signature-line {{ border-top: 1px solid #333; padding-top: 5px; font-size: 10px; color: #64748b; }}
+            
+            .qr-section {{ display: flex; align-items: center; justify-content: center; margin-top: 20px; padding: 15px; background: #f8fafc; border: 1px dashed #1e3a5f; border-radius: 8px; }}
+            .qr-code {{ width: 80px; height: 80px; }}
+            .qr-text {{ margin-left: 15px; }}
+            .qr-text h4 {{ font-size: 11px; color: #1e3a5f; font-weight: 700; margin-bottom: 4px; }}
+            .qr-text p {{ font-size: 9px; color: #64748b; }}
         </style>
     </head>
     <body>
@@ -1402,6 +1427,7 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
             <div class="info-box">
                 <h3>Cliente</h3>
                 <p>{os['cliente_nome']}</p>
+                <p class="small">{os.get('cliente_documento', '') or ''}</p>
             </div>
             <div class="info-box">
                 <h3>Veículo / Motor</h3>
@@ -1430,12 +1456,13 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
     """
     
     for servico in os.get('servicos', []):
+        valor_servico = servico.get('valor', 0) or 0
         html_content += f"""
                     <tr>
                         <td>{servico['setor']}</td>
                         <td>{servico['servico']}</td>
                         <td>{servico.get('funcionario_nome', '-')}</td>
-                        <td class="right">R$ {servico['valor']:.2f}</td>
+                        <td class="right">R$ {valor_servico:.2f}</td>
                     </tr>
         """
     
@@ -1462,12 +1489,14 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
         """
         
         for peca in os['pecas']:
+            valor_unit = peca.get('valor_unitario', 0) or 0
+            valor_total = peca.get('valor_total', 0) or 0
             html_content += f"""
                     <tr>
                         <td>{peca['peca_nome']}</td>
                         <td class="center">{peca['quantidade']}</td>
-                        <td class="right">R$ {peca['valor_unitario']:.2f}</td>
-                        <td class="right">R$ {peca['valor_total']:.2f}</td>
+                        <td class="right">R$ {valor_unit:.2f}</td>
+                        <td class="right">R$ {valor_total:.2f}</td>
                     </tr>
             """
         
@@ -1477,30 +1506,45 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
         </div>
         """
     
+    valor_servicos = os.get('valor_servicos', 0) or 0
+    valor_pecas = os.get('valor_pecas', 0) or 0
+    valor_desconto = os.get('valor_desconto', 0) or 0
+    valor_total = os.get('valor_total', 0) or 0
+    
     html_content += f"""
         <div class="totals">
             <div class="total-row">
                 <span class="total-label">Serviços:</span>
-                <span class="total-value">R$ {os['valor_servicos']:.2f}</span>
+                <span class="total-value">R$ {valor_servicos:.2f}</span>
             </div>
             <div class="total-row">
                 <span class="total-label">Peças:</span>
-                <span class="total-value">R$ {os['valor_pecas']:.2f}</span>
+                <span class="total-value">R$ {valor_pecas:.2f}</span>
             </div>
     """
     
-    if os['valor_desconto'] > 0:
+    if valor_desconto > 0:
         html_content += f"""
             <div class="total-row discount">
                 <span class="total-label">Desconto:</span>
-                <span class="total-value">- R$ {os['valor_desconto']:.2f}</span>
+                <span class="total-value">- R$ {valor_desconto:.2f}</span>
             </div>
         """
     
     html_content += f"""
             <div class="total-row grand-total">
                 <span class="total-label">TOTAL:</span>
-                <span class="total-value">R$ {os['valor_total']:.2f}</span>
+                <span class="total-value">R$ {valor_total:.2f}</span>
+            </div>
+        </div>
+        
+        <div class="qr-section">
+            <img src="data:image/png;base64,{qr_base64}" class="qr-code" alt="QR Code Portal" />
+            <div class="qr-text">
+                <h4>Acompanhe sua OS em tempo real</h4>
+                <p>Escaneie o QR Code para acessar o Portal do Cliente</p>
+                <p>e acompanhar o progresso do seu serviço.</p>
+                <p style="margin-top: 5px; color: #1e3a5f;"><strong>OS #{os['numero_fisico']}</strong></p>
             </div>
         </div>
         
@@ -1516,7 +1560,7 @@ async def gerar_pdf_os(os_id: str, current_user: dict = Depends(get_current_user
         <div class="footer">
             <p class="footer-company">Eliezer Reis dos Santos & Cia Ltda</p>
             <p>Av. Vereador João Silva - Andaia - Santo Antônio de Jesus/BA</p>
-            <p>Tel: (75) 3631-5946 | WhatsApp: (75) 98298-2509</p>
+            <p>Tel: (75) 3016-0556 | WhatsApp: (75) 98298-2509</p>
         </div>
     </body>
     </html>
