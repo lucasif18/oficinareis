@@ -637,17 +637,32 @@ async def list_servicos_funcionario(
     status: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user)
 ):
-    # Pegar setor do funcionário
-    funcionario = await db.funcionarios.find_one({"nome": current_user.get("nome")}, {"_id": 0})
-    setor = funcionario.get("especialidade") if funcionario else None
+    # Pegar setores do funcionário (busca por user_id ou nome)
+    funcionario = await db.funcionarios.find_one(
+        {"$or": [
+            {"user_id": current_user.get("id")},
+            {"email": current_user.get("email")},
+            {"nome": current_user.get("nome")}
+        ]}, 
+        {"_id": 0}
+    )
+    
+    # Pegar especialidades (array de setores)
+    especialidades = []
+    if funcionario:
+        especialidades = funcionario.get("especialidades", [])
+        # Fallback para especialidade singular se existir
+        if not especialidades and funcionario.get("especialidade"):
+            especialidades = [funcionario.get("especialidade")]
     
     pipeline = [
         {"$match": {"status": {"$ne": "concluido"}}},
         {"$unwind": {"path": "$servicos", "includeArrayIndex": "servico_index"}},
     ]
     
-    if setor:
-        pipeline.append({"$match": {"servicos.setor": setor}})
+    # Se funcionário tem especialidades, filtrar apenas serviços desses setores
+    if especialidades:
+        pipeline.append({"$match": {"servicos.setor": {"$in": especialidades}}})
     
     if status:
         status_filter = status if status != "disponivel" else {"$in": ["disponivel", None]}
