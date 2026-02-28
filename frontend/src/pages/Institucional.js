@@ -316,12 +316,12 @@ const Institucional = () => {
                 Contato
               </h4>
               <p className="text-slate-400 text-sm">
-                <a href="tel:+557536315946" className="hover:text-white transition-colors">(75) 3631-5946</a><br />
+                <a href="tel:+557530160556" className="hover:text-white transition-colors">(75) 3016-0556</a><br />
                 <a href="tel:+5575982982509" className="hover:text-white transition-colors">(75) 98298-2509</a>
               </p>
             </div>
           </div>
-          <div className="border-t border-white/10 mt-8 pt-8 text-center text-slate-400 text-sm">
+          <div className="border-t border-yellow-500/30 mt-8 pt-8 text-center text-slate-400 text-sm">
             <p>&copy; {new Date().getFullYear()} Oficina Reis. Todos os direitos reservados.</p>
           </div>
         </div>
