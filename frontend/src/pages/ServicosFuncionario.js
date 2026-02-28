@@ -149,6 +149,56 @@ const ServicosFuncionario = () => {
     }
   };
 
+  // Função para abrir modal de foto
+  const openFotoModal = (servico, tipo) => {
+    setSelectedServico(servico);
+    setFotoTipo(tipo);
+    setPreviewImage(null);
+    setShowFotoModal(true);
+  };
+
+  // Função para processar imagem selecionada
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Imagem deve ter no máximo 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Função para fazer upload da foto
+  const uploadFoto = async () => {
+    if (!previewImage || !selectedServico) return;
+    
+    setUploading(true);
+    try {
+      // Fazer upload da foto para a OS
+      await axios.post(`${API_URL}/api/ordens-servico/${selectedServico.os_id}/fotos`, {
+        tipo: fotoTipo,
+        imagem_base64: previewImage,
+        descricao: `${fotoTipo === 'antes' ? 'Antes' : 'Depois'} - Setor: ${selectedServico.setor}`,
+        setor: selectedServico.setor
+      });
+      
+      toast.success(`Foto "${fotoTipo}" enviada com sucesso! Cliente e ADM foram notificados.`);
+      setShowFotoModal(false);
+      setPreviewImage(null);
+      fetchServicos();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao enviar foto');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const getStatusBadge = (status, bloqueado_por) => {
     if (bloqueado_por && bloqueado_por !== user?.id) {
       return (
