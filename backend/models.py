@@ -129,6 +129,7 @@ class Motorista(BaseModel):
     cnh: str
     veiculo_modelo: Optional[str] = None
     veiculo_placa: Optional[str] = None
+    user_id: Optional[str] = None
     ativo: bool = True
     criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
