@@ -56,6 +56,7 @@ class Cliente(BaseModel):
     endereco: Optional[str] = None
     cidade: Optional[str] = None
     estado: Optional[str] = None
+    user_id: Optional[str] = None
     criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     @field_validator('cpf_cnpj')
