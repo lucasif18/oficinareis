@@ -1279,7 +1279,7 @@ async def get_whatsapp_link(os_id: str, current_user: dict = Depends(get_current
         telefone_limpo = '55' + telefone_limpo
     
     # Montar mensagem
-    portal_url = "https://employee-tasks-5.preview.emergentagent.com/area-cliente"
+    portal_url = "https://motor-workshop-test.preview.emergentagent.com/area-cliente"
     mensagem = f"""Olá {cliente_nome}! 👋
 
 🔧 *Oficina Reis* informa:

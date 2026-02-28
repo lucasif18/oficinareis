@@ -1,63 +1,111 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou a criação de um sistema de gestão web completo para uma oficina de retificação de motores, chamado Oficina Reis. Inicialmente, foram solicitados 8 módulos (Dashboard, Clientes, Peças, Ordens de Serviço, Orçamentos, Romaneio, Cadastros, Financeiro).
+O usuário solicitou um sistema de gestão para uma oficina, Oficina Reis. O escopo inicial de 8 módulos foi expandido com múltiplos requisitos detalhados ao longo de várias sessões.
 
-Subsequentemente, o usuário adicionou novos requisitos:
-1.  **Níveis de Acesso (Roles):** Implementar 3 tipos de usuários (ADM, Motorista, Funcionário) com permissões de acesso distintas e um cadastro público validado por códigos. Um perfil de Cliente também foi adicionado para consulta de Ordens de Serviço (OS).
-2.  **Página Institucional:** Criar uma página de apresentação da empresa para clientes.
-3.  **Melhorias na OS:** Adicionar funcionalidades de editar e excluir Ordens de Serviço.
-4.  **Atualização do PDF:** Melhorar o layout de impressão da OS.
-5.  **Grande Refatoração (Última Solicitação):**
-    *   **Romaneio:** Unificar a funcionalidade para ADM e Motorista, mostrando apenas OS com status 'Pronto' e adicionando confirmação de entrega por item.
-    *   **Peças:** Criar um formulário de entrada rápida de estoque.
-    *   **Perfil Funcionário:** Restringir o dashboard e criar um novo menu Serviços, onde os funcionários podem selecionar tarefas de seus setores. A seleção deve bloquear a tarefa para outros funcionários em tempo real (Padrão Observer). O funcionário não deve ver preços.
-    *   **UX/UI:** Adicionar botão para visualizar clientes, incluir mais dados no cabeçalho da OS, permitir edição de setores na Tabela de Preços e alterar relatórios para uma visão anual.
+**Requisitos mais recentes (adicionados nesta sessão):**
+1.  **Identidade Visual:** Mudar o tema de cores do site para Azul e Amarelo.
+2.  **Segurança e Acessos:**
+    *   Implementar uma trava de segurança para ocultar todos os valores financeiros (preços, faturamento) para os perfis 'Funcionário' e 'Motorista' no frontend e no backend.
+    *   Corrigir o redirecionamento no login para direcionar cada perfil (, , ) para seu respectivo dashboard.
+    *   Autorizar funcionários a fazerem upload de fotos de 'Antes' e 'Depois' nas Ordens de Serviço (OS).
+    *   Garantir que o auto-cadastro de 'Funcionário' crie uma entrada na lista de funcionários.
+3.  **Funcionalidades:**
+    *   Implementar um sistema de galeria de fotos nas OS, com upload restrito (originalmente ADM, agora estendido para Funcionário) e visualização no Portal do Cliente.
+    *   Implementar uma funcionalidade Esqueci a Senha.
+    *   Adicionar um sistema de notificação via WhatsApp para mudanças de status da OS.
+    *   Adicionar um QR Code no PDF da OS que linka para o Portal do Cliente.
+    *   Bloquear a inclusão de imagens na geração de PDF e na impressão da OS.
+4.  **Correções de Bugs:**
+    *   Corrigir um bug de carregamento na Área do Cliente.
+    *   Corrigir um erro de carregamento na visualização de OS para o perfil 'Motorista'.
+5.  **Atualizações de Conteúdo:**
+    *   Atualizar o telefone na página institucional para (75) 3016-0556.
 
 **User's preferred language**: Portuguese
 
 **what currently exists?**
-Uma aplicação full-stack (FastAPI + React + MongoDB) funcional.
-- **Autenticação:** Sistema de login com JWT e múltiplos níveis de acesso (Administrador, Motorista, Funcionário, Cliente) com restrições de menu e visualização de dados. Inclui uma página de cadastro público com validação por código.
-- **Módulos Concluídos:** Dashboard (com restrições), Clientes, Peças, Ordens de Serviço (com CRUD completo), Orçamentos, Romaneio, Tabela de Preços, Funcionários, Financeiro (com Contas a Pagar/Receber, Fluxo de Caixa, DRE) e Relatórios.
-- **Funcionalidades Adicionais:** Geração de PDF para OS, Orçamentos e Romaneios. Página institucional (marketing) com vídeo de fundo.
-- **Testes:** O projeto passou por vários ciclos de testes com o , com as últimas funcionalidades implementadas atingindo 100% de sucesso.
+Uma aplicação full-stack (FastAPI + React + MongoDB) com um novo tema de cores (Azul e Amarelo).
+- **Autenticação e Segurança:** Sistema de login com JWT e múltiplos perfis (ADM, Motorista, Funcionário, Cliente) com redirecionamento baseado no perfil. Foram implementadas travas de segurança no backend e frontend para ocultar dados financeiros de perfis não autorizados. Endpoints de Esqueci a Senha foram criados no backend.
+- **Módulos e Funcionalidades:**
+    - **Portal do Cliente ():** Um portal interativo com busca por OS ou CPF/CNPJ, timeline de progresso em tempo real, galeria de fotos da OS e dados do veículo.
+    - **Dashboards Específicos:** Foram criados  e .
+    - **Ordens de Serviço:** Funcionalidade de upload de fotos (para ADM e Funcionário) e um botão para gerar um link de notificação via WhatsApp. A timeline de status é sincronizada com as ações (criação de romaneio, início de serviço, etc.).
+    - **Romaneio:** Unificado para ADM/Motorista, listando apenas OS com status 'Pronto' e atualizando status da OS para 'Enviando' ao ser adicionada, e 'Entregue' após confirmação.
+    - **Outros Módulos:** Peças (com entrada rápida), Tabela de Preços (com CRUD de setores), Relatórios (com visão anual) e uma página institucional atualizada.
+- **Comunicação em Tempo Real:** WebSockets estão implementados para a fila de serviços dos funcionários e para atualizar o status no Portal do Cliente.
 
 **Last working item**:
-    - Last item agent was working: O agente estava no meio da implementação da grande refatoração solicitada pelo usuário (mensagem #199), focada principalmente no novo sistema de Serviços para funcionários. Ele havia acabado de criar os arquivos de frontend (, , , ), adicionado os endpoints de base no , e atualizado o  e  com as novas rotas e restrições de menu.
+    - Last item agent was working: Adicionar um QR Code no PDF da Ordem de Serviço que leva ao Portal do Cliente. O agente instalou a dependência  no backend e estava prestes a modificar o endpoint de geração de PDF no arquivo  para incluir o QR code.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? both. Esta é uma mudança complexa que afeta a lógica do backend (padrão observer, novas rotas), a estrutura do frontend (novas páginas, renderização condicional) e o fluxo de dados. Testes completos de backend e frontend são essenciais.
+    - Which testing method agent to use? backend testing agent. Testar a geração do PDF e verificar se o QR Code está presente e funcional. Um teste manual com  para gerar o PDF e abri-lo seria uma alternativa.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - N/A
+  - Issue 1: Ocultar as imagens da OS na geração de PDF e na impressão. (P1)
+  - Issue 2: Corrigir erro de carregamento no menu 'Ordens de Serviço' do Motorista. (P1)
+  - Issue 3: Corrigir bug de carregamento inicial na . (P2)
+  
+  **Issues Detail:**
+  - **Issue 1:**
+     - Attempted fixes: Nenhum. O agente focou em adicionar o QR Code, mas o requisito de bloquear as imagens não foi implementado.
+     - Next debug checklist: Localizar a função de geração de PDF em  (provavelmente a que usa WeasyPrint). Modificar o template HTML/CSS passado para a geração do PDF para que a seção da galeria de fotos () tenha uma classe de  ou seja omitida no contexto de impressão.
+     - Why fix this issue and what will be achieved with the fix? O usuário solicitou explicitamente que o PDF contivesse apenas dados textuais, mantendo o documento limpo e formal.
+     - Status: NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? backend
+     - Blocked on other issue: Não.
+  - **Issue 2:**
+     - Attempted fixes: O agente implementou filtros de segurança, mas o usuário reportou que a página de OS para o motorista ainda não carrega.
+     - Next debug checklist: 1. Fazer login como motorista. 2. Acessar a página de Ordens de Serviço. 3. Verificar o console do navegador por erros de rede ou de renderização. 4. Inspecionar o endpoint que lista as OS para o motorista em  e garantir que ele filtra corretamente por status ('Pronto', 'Enviando') e que a sanitização de dados não está quebrando a resposta.
+     - Why fix this issue and what will be achieved with the fix? O motorista precisa de acesso a essa lista para realizar suas tarefas de entrega.
+     - Status: NOT STARTED
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? both
+     - Blocked on other issue: Não.
+  - **Issue 3:**
+     - Attempted fixes: Nenhuma tentativa específica foi registrada.
+     - Next debug checklist: 1. Acessar a . 2. Preencher os dados e submeter. 3. Observar se há um estado de loading que não se resolve ou se a página fica em branco antes de carregar os dados. 4. Verificar o fluxo de dados em , especialmente o  que busca os dados da OS, para garantir que o estado está sendo gerenciado corretamente.
+     - Why fix this issue and what will be achieved with the fix? Melhorar a experiência do usuário, fornecendo feedback visual imediato e correto após a busca da OS.
+     - Status: NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? frontend
+     - Blocked on other issue: Não.
 
 **In progress Task List**:
-  - Task 1: (P0) Finalizar a implementação da grande refatoração e novas funcionalidades.
-     - Where to resume: O agente precisa implementar a lógica completa nos arquivos recém-criados. O foco principal é a página  e os endpoints correspondentes no . A implementação do padrão Observer para bloqueio de tarefas em tempo real é a parte mais crítica e ainda não foi iniciada (a abordagem atual com REST é insuficiente).
-     - What will be achieved with this? O sistema atenderá aos fluxos de trabalho operacionais específicos de cada função, melhorará a usabilidade e a segurança dos dados, e introduzirá um sistema de fila de trabalho concorrente para os funcionários.
+  - Task 1: (P0) Finalizar a implementação do QR Code no PDF da OS.
+     - Where to resume: No arquivo , na função de geração de PDF (endpoint ). O agente precisa importar a biblioteca , gerar a imagem do QR code em memória (usando ) e embuti-la como uma imagem base64 no template HTML do PDF.
+     - What will be achieved with this? Clientes poderão escanear o QR Code na OS impressa para acessar o portal online e acompanhar o status em tempo real.
      - Status: IN PROGRESS
-     - Should Test frontend/backend/both after fix? both
+     - Should Test frontend/backend/both after fix? backend
      - Blocked on something: N/A
 
 **Upcoming and Future Tasks**
-As tarefas a seguir fazem parte da implementação da grande refatoração em andamento (Task 1):
-- **Task 1.1 (Backend - P0):** Implementar o Padrão Observer para a fila de serviços dos funcionários. Isso exigirá um mecanismo de tempo real, como WebSockets, para notificar todos os clientes quando um serviço é selecionado e bloqueado. Os endpoints REST atuais são um ponto de partida, mas não cumprem o requisito de tempo real.
-- **Task 1.2 (Frontend - P0):** Desenvolver a UI e a lógica na página  para listar serviços por setor, conectar-se ao backend (via WebSocket) para receber atualizações em tempo real e permitir que o funcionário selecione e inicie um serviço.
-- **Task 1.3 (Backend/Frontend - P1):** Refatorar o módulo  para unificar a visão do ADM e Motorista, filtrar OS por status 'Pronto' e adicionar checkboxes para confirmação de entrega individual.
-- **Task 1.4 (Backend/Frontend - P1):** Implementar o formulário de entrada rápida de peças e o endpoint correspondente.
-- **Task 1.5 (Frontend - P2):** Implementar as melhorias de UX/UI: adicionar botão Visualizar em Clientes, garantir que os dados do cliente apareçam no cabeçalho da OS, e alterar o seletor de período nos Relatórios para anual.
-- **Task 1.6 (Backend/Frontend - P2):** Habilitar a criação e edição de Setores na Tabela de Preços.
+- **Task 1 (P0):** Implementar a funcionalidade de Esqueci a Senha no frontend.
+    - Detalhes: Criar um modal ou uma nova página acessível a partir da tela de . Este formulário deve interagir com os endpoints  e  já criados no backend.
+- **Task 2 (P1):** Verificar e ajustar os dashboards específicos para cada perfil (, , ).
+    - Detalhes: A lógica de redirecionamento foi criada no . É preciso garantir que cada dashboard exista e exiba apenas os componentes relevantes para o respectivo perfil, conforme as solicitações do usuário.
+- **Task 3 (P2):** Garantir que o auto-cadastro de 'Funcionário' está funcionando corretamente.
+    - Detalhes: O endpoint foi modificado para criar uma entrada na coleção  quando um usuário se registra com o código . É preciso testar esse fluxo de ponta a ponta e confirmar se o novo funcionário aparece na lista de funcionários do ADM.
 
 **Completed work in this session**
-- **Módulo Financeiro:** Implementação e teste completo das páginas ,  e .
-- **Sistema de Níveis de Acesso:** Criação de um sistema robusto de autenticação com 4 perfis (ADM, Funcionário, Motorista, Cliente), com restrições de UI e uma página de cadastro com códigos de validação.
-- **CRUD de Ordens de Serviço:** Adição das funcionalidades de **editar** e **excluir** OS, com lógicas de permissão (ex: apenas ADM pode excluir).
-- **Página Institucional:** Criação de uma página de marketing  com conteúdo e mídia fornecidos pelo usuário.
-- **Melhora de PDF:** Atualização do template HTML no backend para gerar um PDF de OS mais limpo e profissional.
-- **Correções de Qualidade:** Resolução de problemas menores apontados pelo , como códigos de status HTTP e atributos de acessibilidade.
+- **Identidade Visual:** Aplicadas as cores Azul e Amarelo em toda a aplicação, incluindo ,  e a página .
+- **Segurança e Permissões:**
+  - Implementada a sanitização de dados financeiros no backend () para os perfis 'Motorista' e 'Funcionário'.
+  - Ocultados os valores financeiros no frontend (, ) para os mesmos perfis.
+  - O perfil 'Funcionário' agora tem permissão para fazer upload de fotos na OS.
+- **Funcionalidades:**
+  - O redirecionamento no  foi implementado para direcionar os usuários para dashboards específicos de acordo com seu perfil.
+  - A funcionalidade de Esqueci a Senha foi implementada no backend (), com a criação dos endpoints necessários.
+  - Foi criado o .
+  - Foi criado o portal do cliente () com timeline, galeria de fotos e busca.
+  - Foi adicionado um botão de notificação via WhatsApp no componente .
+  - O endpoint de cadastro () foi atualizado para criar automaticamente um registro na coleção  se o  for 'funcionario'.
+- **Conteúdo:** O número de telefone na página  foi atualizado.
+- **Testes:** O  foi executado duas vezes, alcançando 100% de sucesso e corrigindo bugs, como a adição de  nos modelos Pydantic.
 
 **Earlier issues found/mentioned but not fixed**
-   - N/A
+   - **Issue 1:** Bug de carregamento na  (listado em All Pending/In progress Issue list).
+   - **Issue 2:** Erro de carregamento nas Ordens de Serviço para o perfil 'Motorista' (listado em All Pending/In progress Issue list).
 
 **Known issue recurrence from previous fork**
   - N/A
@@ -66,74 +114,76 @@ As tarefas a seguir fazem parte da implementação da grande refatoração em an
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, Pydantic, JWT, Motor (MongoDB driver).
+- **Backend:** FastAPI, Pydantic, JWT, Motor (MongoDB driver), WebSockets, WeasyPrint, **qrcode**.
 - **Frontend:** React, React Router, Chart.js, Lucide-React, TailwindCSS, Axios.
 - **Database:** MongoDB.
-- **PDF Generation:** WeasyPrint.
-- **Real-time Communication:** **WebSockets** (necessário para a próxima etapa do padrão Observer, ainda não implementado).
 
 **key DB schema**
-- **User**: {username, email, role, hashed_password}
-- **OrdemServico**: {..., servicos: [{setor, nome, valor, **status**, **funcionario_id**}] } (campos em negrito precisam ser adicionados/utilizados para a nova lógica).
-- **Funcionario**: {nome, **especialidade**} (campo em negrito é crucial para filtrar serviços).
+  - **User**: {username, email, role, hashed_password}
+  - **OrdemServico**: {..., cliente_telefone, cliente_cpf, cliente_email, status, servicos: [...], **fotos_antes**: [str], **fotos_depois**: [str]}
+  - **Funcionario**: {nome, especialidade, **user_id**: ObjectId}
+  - **Romaneio**: {..., entregas_confirmadas: {os_id: bool}}
 
 **changes in tech stack**
-  - N/A
+  - Adicionada a biblioteca  ao backend.
 
 **All files of reference**
-- : Contém toda a lógica da API. Precisa de modificações significativas para implementar os novos endpoints e a lógica de WebSocket.
-- : Página recém-criada onde a lógica da fila de serviços do funcionário será implementada.
-- : Precisa ser refatorado para atender aos novos requisitos.
-- : Precisa ser modificado para adicionar o formulário de entrada rápida.
-- : Já foi atualizado para os novos menus, mas pode precisar de ajustes.
-- : Contém todas as rotas da aplicação, incluindo as recém-adicionadas.
+- : Arquivo central da API. Modificado para sanitização de dados, upload de fotos, endpoints de recuperação de senha e precisa ser atualizado para a geração de QR Code e bloqueio de imagens no PDF.
+- : Modificado para implementar a lógica de redirecionamento por perfil. Precisa ser atualizado para incluir a interface de Esqueci a Senha.
+- : Nova página criada para o portal do cliente. Requer correção no carregamento inicial.
+- : Atualizado para permitir upload de fotos por funcionários e exibir o botão de WhatsApp.
+- : Cores e telefone atualizados.
+- : Modificado para ocultar totais financeiros do perfil 'Motorista'.
+- : Adicionadas as novas variáveis de cor (Azul e Amarelo).
+- : Rotas atualizadas para  e .
+- : Atualizado com as novas cores e links de menu.
 
 **Areas that need refactoring**:
-- A lógica para o Dashboard Restrito do funcionário foi iniciada com a criação de uma nova página (). No entanto, a solicitação do usuário pode ser interpretada como uma modificação na página  existente, usando renderização condicional para ocultar widgets. O agente deve reavaliar se uma página separada é necessária ou se é um caso de over-engineering.
-- A implementação do padrão Observer com endpoints REST é inadequada. O próximo agente deve descartar essa abordagem e reimplementá-la usando WebSockets para garantir o bloqueio e a atualização em tempo real.
+- A implementação dos dashboards por perfil ( para ADM, , ) precisa ser validada. O agente deve confirmar que cada dashboard contém apenas os componentes necessários para o seu respectivo perfil, garantindo que não haja sobreposição ou falta de informação.
 
 **key api endpoints**
-- : Cadastro de novos usuários.
-- : (PUT, DELETE) para editar e excluir OS.
-- : (GET) Para listar serviços para um funcionário.
-- : (POST/PUT) Para um funcionário selecionar/iniciar um serviço. **(Precisa ser migrado para WebSocket)**.
-- : (POST) Para o novo formulário de entrada de peças.
-- : (WebSocket) Endpoint sugerido para a comunicação em tempo real da fila de serviços.
+- : (POST) Inicia o processo de recuperação de senha.
+- : (POST) Conclui a redefinição de senha.
+- : (POST) Faz upload de fotos para uma OS (ADM e Funcionário).
+- : Gera o PDF da OS. (Precisa ser modificado).
+- : Endpoint WebSocket para comunicação em tempo real da fila de serviços.
 
 **Critical Info for New Agent**
-- **A implementação do padrão Observer é a tarefa mais crítica e complexa.** A abordagem inicial do agente anterior usando apenas endpoints REST está incorreta para o requisito de bloqueio em tempo real. Você **DEVE** implementar uma solução baseada em **WebSockets** (FastAPI tem suporte nativo) para garantir que, quando um funcionário seleciona uma tarefa, ela seja bloqueada instantaneamente para todos os outros.
-- O usuário está fornecendo requisitos muito detalhados e complexos. Leia atentamente a solicitação da mensagem #199 para garantir que todos os pontos sejam abordados.
-- Preste atenção à refatoração da página do Dashboard do funcionário; pode ser mais simples modificar a página existente em vez de manter uma nova.
+- **Prioridade Máxima:** A finalização do QR Code no PDF e a implementação da interface de Esqueci a Senha no frontend são as tarefas mais importantes.
+- **Bugs Críticos:** Resolva os bugs de carregamento na  e na lista de OS do Motorista, pois eles impactam diretamente a usabilidade de perfis chave.
+- **Requisitos do PDF:** Ao implementar o QR Code, lembre-se do requisito de **excluir** as imagens da OS da versão impressa. As duas tarefas devem ser feitas na mesma função de geração de PDF.
+- **Teste de Perfis:** Após cada mudança, é crucial testar a aplicação com os diferentes logins (ADM, Motorista, Funcionário) para garantir que as restrições de visualização e as funcionalidades específicas de cada perfil estão funcionando como esperado.
 
 **documents and test reports created in this job**
   - 
   - 
-  - 
+  -  (atualizado)
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **#199**: O usuário forneceu uma lista extensa e detalhada de novas funcionalidades e refatorações, que é a base do trabalho atual. **(PENDING)**
-2.  **#198**: O agente finalizou a tarefa anterior e perguntou o que fazer a seguir.
-3.  **#197**: O agente resumiu os resultados bem-sucedidos do teste.
-4.  **#195**: Resultado do teste (iteration_3.json).
-5.  **#191**: O agente confirmou que os botões de editar/excluir OS foram adicionados.
-6.  **#189**: O agente confirmou que a página institucional estava funcionando.
-7.  **#158**: O usuário solicitou 3 novas tarefas: 1) Ações de editar/excluir OS, 2) Atualizar moldes de impressão, 3) Criar página institucional com texto e mídia específicos. **(COMPLETED)**
-8.  **#156**: O agente informou que os testes de níveis de usuário passaram com 100% de sucesso.
-9.  **#104**: O usuário detalhou as restrições para cada tipo de usuário e solicitou a remoção do login de demonstração. **(COMPLETED)**
-10. **#101**: O usuário solicitou a implementação dos 3 níveis de usuário (ADM, Motorista, Funcionário) com cadastro validado por código. **(COMPLETED)**
+**Last 10 User Messages and any pending HUMAN messages** 
+- **#322**: Requisição detalhada e urgente para corrigir redirecionamentos, implementar Esqueci a Senha, autorizar funcionários a fazer upload de fotos, bloquear fotos no PDF, adicionar QR Code, e corrigir bugs de acesso para Motorista e Cliente. **(IN PROGRESS)**
+- **#263**: Usuário pediu para continuar de onde parou. **(DONE)**
+- **#237**: Requisição detalhada para mudar as cores do site para Azul/Amarelo, implementar segurança de valores, galeria de fotos na OS, e notificação por WhatsApp. **(DONE)**
+- **#231**: O agente finalizou a tarefa anterior com sucesso.
+- **#227**: O testing agent concluiu os testes com 100% de sucesso.
+- **#166**: Requisição detalhada para criar o Portal do Cliente com Timeline, Dashboard do Motorista, e refinar a lógica do Romaneio e WebSocket. **(DONE)**
+- **#164**: O agente confirmou que a implementação anterior estava completa.
+- **#163**: Usuário pediu para concluir de onde parou. **(DONE)**
+- **#88**: Usuário pediu para continuar com as tarefas P1 e P2 e a melhoria sugerida. **(DONE)**
+- **#80**: O agente finalizou a tarefa anterior e atualizou o PRD.md.
 
 **Project Health Check:**
-- **Broken:** N/A
+- **Broken:** A funcionalidade de visualização de OS para o perfil 'Motorista' e o carregamento inicial da  estão com bugs reportados.
 - **Mocked:** N/A
 
 **3rd Party Integrations**
 - WeasyPrint: Para geração de PDF.
+- qrcode: Para gerar QR codes.
 
 **Testing status**
   - Testing agent used after significant changes: YES
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: []
-  - Known regressions: []
+  - Known regressions: Bug no carregamento de OS para Motorista e na  podem ser considerados regressões ou problemas não resolvidos da última implementação.
 
 **Credentials to test flow:**
 - **Administrador:**
@@ -145,5 +195,6 @@ As tarefas a seguir fazem parte da implementação da grande refatoração em an
   - 
 
 **What agent forgot to execute**
-- O agente começou a implementar o padrão observer com uma abordagem técnica inadequada (endpoints REST em vez de WebSockets), o que não atenderia ao requisito de tempo real. Isso precisa ser corrigido.
-- O agente criou uma nova página , o que pode ser um excesso de engenharia. A solicitação pode ser atendida com renderização condicional na página  existente.</analysis>
+- Implementar a interface do usuário (frontend) para a funcionalidade Esqueci a Senha.
+- Implementar a lógica para bloquear a exibição de fotos na versão PDF/impressa da Ordem de Serviço.
+- Resolver explicitamente os bugs reportados pelo usuário no carregamento da  e na listagem de OS do motorista.</analysis>
