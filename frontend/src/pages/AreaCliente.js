@@ -52,6 +52,14 @@ const AreaCliente = () => {
   const [wsConnected, setWsConnected] = useState(false);
   const wsRef = useRef(null);
 
+  // Ref para manter a OS atual acessível no WebSocket
+  const osRef = useRef(null);
+  
+  // Atualizar ref quando os mudar
+  useEffect(() => {
+    osRef.current = os;
+  }, [os]);
+
   // Conectar WebSocket para atualizações em tempo real
   const connectWebSocket = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -65,13 +73,20 @@ const AreaCliente = () => {
         setWsConnected(true);
       };
       
-      wsRef.current.onmessage = (event) => {
+      wsRef.current.onmessage = async (event) => {
         try {
           const data = JSON.parse(event.data);
           // Atualizar OS se houver mudança
           if (data.type === 'servico_concluido' || data.type === 'servico_bloqueado') {
-            if (os) {
-              handleSearch(null, os.numero_fisico, 'os');
+            const currentOs = osRef.current;
+            if (currentOs?.numero_fisico) {
+              // Refetch OS data
+              try {
+                const response = await axios.get(`${API_URL}/api/consulta-os/${currentOs.numero_fisico}`);
+                setOs(response.data);
+              } catch (err) {
+                console.error('Erro ao atualizar OS:', err);
+              }
             }
           }
         } catch (e) {
@@ -90,7 +105,7 @@ const AreaCliente = () => {
     } catch (error) {
       setWsConnected(false);
     }
-  }, [os]);
+  }, []);
 
   useEffect(() => {
     connectWebSocket();
