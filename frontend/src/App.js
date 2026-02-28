@@ -22,6 +22,7 @@ import ViewRomaneio from './pages/ViewRomaneio';
 import Motoristas from './pages/Motoristas';
 import TabelaPrecos from './pages/TabelaPrecos';
 import Funcionarios from './pages/Funcionarios';
+import Usuarios from './pages/Usuarios';
 import Financeiro from './pages/Financeiro';
 import FluxoCaixa from './pages/FluxoCaixa';
 import ContasPagar from './pages/ContasPagar';
