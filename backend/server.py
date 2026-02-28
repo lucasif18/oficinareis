@@ -1263,6 +1263,7 @@ class FotoUpload(PydanticBaseModel):
     tipo: str  # 'antes' ou 'depois'
     imagem_base64: str  # Base64 da imagem
     descricao: Optional[str] = None
+    setor: Optional[str] = None
 
 @api_router.post("/ordens-servico/{os_id}/fotos")
 async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
@@ -1280,6 +1281,7 @@ async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depe
         "tipo": data.tipo,
         "url": data.imagem_base64,  # Base64 string
         "descricao": data.descricao,
+        "setor": data.setor,
         "data_upload": datetime.now(timezone.utc).isoformat(),
         "upload_por": current_user.get('nome', 'Usuário')
     }
@@ -1292,6 +1294,9 @@ async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depe
         {"id": os_id},
         {"$set": {"fotos": fotos}}
     )
+    
+    # Notificar cliente via WebSocket (se conectado)
+    # TODO: Implementar notificação em tempo real
     
     return {"message": "Foto adicionada com sucesso", "foto_id": foto["id"]}
 
