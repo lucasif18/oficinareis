@@ -415,6 +415,94 @@ const ServicosFuncionario = () => {
           </div>
         )}
       </div>
+      
+      {/* Modal de Upload de Foto */}
+      <Dialog open={showFotoModal} onOpenChange={setShowFotoModal}>
+        <DialogContent className="max-w-md" data-testid="foto-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="w-5 h-5 text-[#f97316]" />
+              Foto {fotoTipo === 'antes' ? 'Antes' : 'Depois'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {selectedServico && (
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-sm font-medium text-slate-700">OS #{selectedServico.os_numero}</p>
+                <p className="text-xs text-slate-500">Setor: {selectedServico.setor}</p>
+                <p className="text-xs text-slate-500">Serviço: {selectedServico.servico}</p>
+              </div>
+            )}
+            
+            <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-[#f97316] transition-colors">
+              {previewImage ? (
+                <div className="relative">
+                  <img 
+                    src={previewImage} 
+                    alt="Preview" 
+                    className="max-h-48 mx-auto rounded-lg"
+                  />
+                  <button
+                    onClick={() => setPreviewImage(null)}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="cursor-pointer block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+                      <Image className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-700">Clique para selecionar</p>
+                    <p className="text-xs text-slate-500">ou use a câmera do celular</p>
+                  </div>
+                </label>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowFotoModal(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={uploadFoto}
+                disabled={!previewImage || uploading}
+                className="bg-[#f97316] hover:bg-[#ea580c]"
+              >
+                {uploading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Enviar Foto
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-slate-500 text-center">
+              O cliente e o ADM serão notificados quando a foto for enviada.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
