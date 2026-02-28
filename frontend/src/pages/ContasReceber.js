@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Plus, Check, X, Calendar, FileText, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,8 @@ import { Label } from '../components/ui/label';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ContasReceber = () => {
+  const { user } = useAuth();
+  const isMotorista = user?.role === 'motorista';
   const [contas, setContas] = useState([]);
   const [osDisponiveis, setOsDisponiveis] = useState([]);
   const [clientes, setClientes] = useState([]);
