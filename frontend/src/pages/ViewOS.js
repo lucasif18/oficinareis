@@ -27,6 +27,8 @@ const ViewOS = () => {
   const fileInputRef = useRef(null);
 
   const isAdmin = user?.role === 'admin';
+  const isFuncionario = user?.role === 'funcionario';
+  const canUploadPhotos = isAdmin || isFuncionario;
 
   useEffect(() => {
     fetchOS();
