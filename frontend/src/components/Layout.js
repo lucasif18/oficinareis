@@ -48,12 +48,6 @@ const Layout = ({ children }) => {
     navigate('/login');
   };
 
-  // Se for cliente, redirecionar para consulta
-  if (user?.role === 'cliente') {
-    navigate('/consulta-os');
-    return null;
-  }
-
   const getRoleLabel = (role) => {
     const labels = {
       admin: 'Administrador',
