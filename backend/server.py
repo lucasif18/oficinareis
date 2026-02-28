@@ -410,6 +410,68 @@ async def consulta_os_por_cliente(documento: str):
     
     return resultado
 
+# ========== ENDPOINTS DO CLIENTE LOGADO ==========
+@api_router.get("/cliente/minhas-os")
+async def get_minhas_os(current_user: dict = Depends(get_current_user)):
+    """Retorna as OS do cliente logado"""
+    # Verificar se o usuário é cliente e tem cliente_id
+    cliente_id = current_user.get('cliente_id')
+    
+    # Se não tiver cliente_id, buscar pelo email no cadastro de clientes
+    if not cliente_id:
+        cliente = await db.clientes.find_one({"email": current_user.get('email')}, {"_id": 0})
+        if cliente:
+            cliente_id = cliente.get('id')
+    
+    if not cliente_id:
+        # Retornar lista vazia se não encontrar cliente vinculado
+        return []
+    
+    # Buscar todas as OS do cliente
+    os_list = await db.ordens_servico.find(
+        {"cliente_id": cliente_id}, 
+        {"_id": 0}
+    ).sort("criado_em", -1).to_list(100)
+    
+    resultado = []
+    for os in os_list:
+        if isinstance(os.get('criado_em'), str):
+            os['criado_em'] = datetime.fromisoformat(os['criado_em'])
+        if os.get('concluido_em') and isinstance(os['concluido_em'], str):
+            os['concluido_em'] = datetime.fromisoformat(os['concluido_em'])
+        
+        # Verificar se tem pagamento pendente
+        conta = await db.contas_receber.find_one({
+            "os_id": os.get('id'),
+            "status": "pendente"
+        }, {"_id": 0})
+        
+        os['pago'] = conta is None
+        
+        resultado.append({
+            "id": os.get("id"),
+            "numero_fisico": os["numero_fisico"],
+            "cliente_nome": os["cliente_nome"],
+            "veiculo_tipo": os["veiculo_tipo"],
+            "veiculo_modelo": os["veiculo_modelo"],
+            "veiculo_serie": os.get("veiculo_serie"),
+            "categoria": os.get("categoria"),
+            "status": os["status"],
+            "servicos": os["servicos"],
+            "pecas": os["pecas"],
+            "valor_servicos": os.get("valor_servicos", 0),
+            "valor_pecas": os.get("valor_pecas", 0),
+            "valor_total": os["valor_total"],
+            "fotos": os.get("fotos", []),
+            "romaneio_id": os.get("romaneio_id"),
+            "entregue": os.get("entregue", False),
+            "pago": os.get("pago", True),
+            "criado_em": os["criado_em"].isoformat() if os.get("criado_em") else None,
+            "concluido_em": os["concluido_em"].isoformat() if os.get("concluido_em") else None
+        })
+    
+    return resultado
+
 @api_router.get("/financeiro/inadimplentes")
 async def get_inadimplentes(current_user: dict = Depends(get_current_user)):
     """Retorna lista de clientes com débitos em atraso > 30 dias"""
