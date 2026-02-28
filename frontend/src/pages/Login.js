@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Wrench, AlertCircle, Search } from 'lucide-react';
+import { Wrench, AlertCircle, Search, Mail, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -18,9 +24,24 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(email, senha);
+      const userData = await login(email, senha);
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      
+      // Redirecionar baseado no role do usuário
+      const role = userData?.role || 'admin';
+      switch(role) {
+        case 'motorista':
+          navigate('/dashboard-motorista');
+          break;
+        case 'funcionario':
+          navigate('/dashboard-funcionario');
+          break;
+        case 'cliente':
+          navigate('/area-cliente');
+          break;
+        default:
+          navigate('/dashboard');
+      }
     } catch (err) {
       const message = err.response?.data?.detail || 'Erro ao fazer login';
       setError(message);
@@ -30,16 +51,37 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error('Digite seu email');
+      return;
+    }
+    
+    setResetLoading(true);
+    try {
+      await axios.post(`${API_URL}/api/auth/forgot-password`, { email: resetEmail });
+      toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+      setShowForgotPassword(false);
+      setResetEmail('');
+    } catch (err) {
+      const message = err.response?.data?.detail || 'Erro ao enviar email de recuperação';
+      toast.error(message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1e3a5f] via-[#2d5a8a] to-[#1e3a5f] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#f97316] rounded-lg flex items-center justify-center mb-4">
-              <Wrench className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 bg-[#f59e0b] rounded-lg flex items-center justify-center mb-4">
+              <Wrench className="w-10 h-10 text-[#1e3a5f]" />
             </div>
             <h1 className="font-heading font-black text-3xl text-[#1e3a5f]">Oficina Reis</h1>
-            <p className="text-slate-600 text-sm mt-1">Retificação de Motores</p>
+            <p className="text-yellow-600 text-sm mt-1">Retificação de Motores</p>
           </div>
 
           {error && (
@@ -49,15 +91,17 @@ const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+          {!showForgotPassword ? (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                 data-testid="login-email"
                 className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
                 placeholder="seu@email.com"
