@@ -417,7 +417,13 @@ async def get_minhas_os(current_user: dict = Depends(get_current_user)):
     # Verificar se o usuário é cliente e tem cliente_id
     cliente_id = current_user.get('cliente_id')
     
-    # Se não tiver cliente_id, buscar pelo email no cadastro de clientes
+    # Se não tiver cliente_id diretamente, buscar no banco de usuários
+    if not cliente_id:
+        user_db = await db.users.find_one({"id": current_user.get('id')}, {"_id": 0})
+        if user_db:
+            cliente_id = user_db.get('cliente_id')
+    
+    # Se ainda não tiver, buscar pelo email no cadastro de clientes
     if not cliente_id:
         cliente = await db.clientes.find_one({"email": current_user.get('email')}, {"_id": 0})
         if cliente:
