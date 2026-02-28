@@ -227,16 +227,35 @@ async def cadastro_publico(data: UserRegister):
     
     # Se for funcionário, criar também registro na tabela de funcionários
     if data.role == "funcionario":
-        funcionario = Funcionario(
-            nome=data.nome,
-            especialidade=data.especialidade if hasattr(data, 'especialidade') else "Geral",
-            email=data.email,
-            telefone=data.telefone if hasattr(data, 'telefone') else None,
-            user_id=user.id
-        )
-        doc_func = funcionario.model_dump()
-        doc_func['criado_em'] = doc_func['criado_em'].isoformat()
-        await db.funcionarios.insert_one(doc_func)
+        funcionario = {
+            "id": str(uuid.uuid4()),
+            "nome": data.nome,
+            "cpf": data.cpf_cnpj if hasattr(data, 'cpf_cnpj') and data.cpf_cnpj else "",
+            "telefone": data.telefone if hasattr(data, 'telefone') and data.telefone else "",
+            "email": data.email,
+            "especialidade": "Geral",
+            "especialidades": [],
+            "user_id": user.id,
+            "ativo": True,
+            "criado_em": datetime.now(timezone.utc).isoformat()
+        }
+        await db.funcionarios.insert_one(funcionario)
+    
+    # Se for motorista, criar também registro na tabela de motoristas
+    if data.role == "motorista":
+        motorista = {
+            "id": str(uuid.uuid4()),
+            "nome": data.nome,
+            "cpf": data.cpf_cnpj if hasattr(data, 'cpf_cnpj') and data.cpf_cnpj else "",
+            "telefone": data.telefone if hasattr(data, 'telefone') and data.telefone else "",
+            "cnh": "",
+            "veiculo_modelo": None,
+            "veiculo_placa": None,
+            "user_id": user.id,
+            "ativo": True,
+            "criado_em": datetime.now(timezone.utc).isoformat()
+        }
+        await db.motoristas.insert_one(motorista)
     
     return {
         "message": "Cadastro realizado com sucesso!",
