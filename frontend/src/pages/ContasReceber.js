@@ -187,28 +187,31 @@ const ContasReceber = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-amber-50 rounded-lg border border-amber-200 p-6">
-          <p className="text-sm text-amber-600 font-medium mb-2">Pendente</p>
-          <p className="font-heading font-black text-3xl text-amber-700">
-            R$ {totalPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
+      {/* Cards de totais - ocultos para motorista */}
+      {!isMotorista && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-amber-50 rounded-lg border border-amber-200 p-6">
+            <p className="text-sm text-amber-600 font-medium mb-2">Pendente</p>
+            <p className="font-heading font-black text-3xl text-amber-700">
+              R$ {totalPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div className="bg-emerald-50 rounded-lg border border-emerald-200 p-6">
+            <p className="text-sm text-emerald-600 font-medium mb-2">Recebido</p>
+            <p className="font-heading font-black text-3xl text-emerald-700">
+              R$ {totalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+            <p className="text-sm text-blue-600 font-medium mb-2">Total</p>
+            <p className="font-heading font-black text-3xl text-blue-700">
+              R$ {(totalPendente + totalRecebido).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
         </div>
-        <div className="bg-emerald-50 rounded-lg border border-emerald-200 p-6">
-          <p className="text-sm text-emerald-600 font-medium mb-2">Recebido</p>
-          <p className="font-heading font-black text-3xl text-emerald-700">
-            R$ {totalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-        </div>
-        <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-          <p className="text-sm text-blue-600 font-medium mb-2">Total</p>
-          <p className="font-heading font-black text-3xl text-blue-700">
-            R$ {(totalPendente + totalRecebido).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-        </div>
-      </div>
+      )}
 
-      {osDisponiveis.length > 0 && (
+      {osDisponiveis.length > 0 && !isMotorista && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-orange-600" />
           <p className="text-orange-800">
