@@ -30,10 +30,12 @@ import DRE from './pages/DRE';
 import Relatorios from './pages/Relatorios';
 import DashboardFuncionario from './pages/DashboardFuncionario';
 import DashboardMotorista from './pages/DashboardMotorista';
+import DashboardCliente from './pages/DashboardCliente';
 import ServicosFuncionario from './pages/ServicosFuncionario';
 import PecasFuncionario from './pages/PecasFuncionario';
 import ViewCliente from './pages/ViewCliente';
 import AreaCliente from './pages/AreaCliente';
+import MinhasOS from './pages/MinhasOS';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
