@@ -468,7 +468,7 @@ const AreaCliente = () => {
                                   <td className="px-4 py-3 text-sm text-slate-900">{peca.peca_nome}</td>
                                   <td className="px-4 py-3 text-sm text-slate-600 text-center">{peca.quantidade}</td>
                                   <td className="px-4 py-3 text-sm text-slate-900 text-right font-mono">
-                                    R$ {peca.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    R$ {(peca.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </td>
                                 </tr>
                               ))}
