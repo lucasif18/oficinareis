@@ -225,6 +225,19 @@ async def cadastro_publico(data: UserRegister):
     doc['criado_em'] = doc['criado_em'].isoformat()
     await db.users.insert_one(doc)
     
+    # Se for funcionário, criar também registro na tabela de funcionários
+    if data.role == "funcionario":
+        funcionario = Funcionario(
+            nome=data.nome,
+            especialidade=data.especialidade if hasattr(data, 'especialidade') else "Geral",
+            email=data.email,
+            telefone=data.telefone if hasattr(data, 'telefone') else None,
+            user_id=user.id
+        )
+        doc_func = funcionario.model_dump()
+        doc_func['criado_em'] = doc_func['criado_em'].isoformat()
+        await db.funcionarios.insert_one(doc_func)
+    
     return {
         "message": "Cadastro realizado com sucesso!",
         "user": UserResponse(
@@ -235,6 +248,73 @@ async def cadastro_publico(data: UserRegister):
             ativo=user.ativo
         )
     }
+
+# ========== RECUPERAÇÃO DE SENHA ==========
+# Armazenar códigos temporários de recuperação
+reset_codes = {}  # email -> {code, expires_at}
+
+class ForgotPasswordRequest(PydanticBaseModel):
+    email: str
+
+class ResetPasswordRequest(PydanticBaseModel):
+    email: str
+    code: str
+    new_password: str
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Solicita recuperação de senha - gera código"""
+    user = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if not user:
+        # Por segurança, não informamos se o email existe ou não
+        return {"message": "Se o email existir, você receberá um código de recuperação"}
+    
+    import random
+    code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    
+    # Armazenar código (expira em 15 minutos)
+    reset_codes[data.email] = {
+        "code": code,
+        "expires_at": datetime.now(timezone.utc).timestamp() + 900  # 15 min
+    }
+    
+    # Log do código (em produção, enviar por email)
+    logging.info(f"Código de recuperação para {data.email}: {code}")
+    
+    # Em ambiente de desenvolvimento, retornar o código
+    return {
+        "message": "Código de recuperação gerado",
+        "dev_code": code  # Remover em produção
+    }
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Redefine a senha usando o código de recuperação"""
+    stored = reset_codes.get(data.email)
+    
+    if not stored:
+        raise HTTPException(status_code=400, detail="Código de recuperação não encontrado ou expirado")
+    
+    if datetime.now(timezone.utc).timestamp() > stored["expires_at"]:
+        del reset_codes[data.email]
+        raise HTTPException(status_code=400, detail="Código de recuperação expirado")
+    
+    if stored["code"] != data.code:
+        raise HTTPException(status_code=400, detail="Código inválido")
+    
+    # Atualizar senha
+    result = await db.users.update_one(
+        {"email": data.email},
+        {"$set": {"senha_hash": hash_password(data.new_password)}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Remover código usado
+    del reset_codes[data.email]
+    
+    return {"message": "Senha alterada com sucesso"}
 
 # ========== CONSULTA PÚBLICA DE OS (PARA CLIENTES) ==========
 @api_router.get("/consulta-os/{numero_fisico}")
