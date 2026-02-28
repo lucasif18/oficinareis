@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Wrench, Phone, MapPin, Clock, ChevronRight, Settings, Cog, Disc, Flame, MessageCircle } from 'lucide-react';
+import { Wrench, Phone, MapPin, Clock, ChevronRight, Settings, Cog, Disc, Flame, MessageCircle, QrCode } from 'lucide-react';
 
 const Institucional = () => {
   const whatsappNumber = '5575982982509';
   const whatsappMessage = encodeURIComponent('Olá! Gostaria de solicitar um orçamento.');
+  const telefoneFixo = '(75) 3016-0556';
 
   return (
     <div className="min-h-screen bg-white">
@@ -26,24 +27,24 @@ const Institucional = () => {
           <header className="p-6">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-[#f97316] rounded-lg flex items-center justify-center">
-                  <Wrench className="w-7 h-7 text-white" />
+                <div className="w-12 h-12 bg-[#f59e0b] rounded-lg flex items-center justify-center">
+                  <Wrench className="w-7 h-7 text-[#1e3a5f]" />
                 </div>
                 <div>
                   <h1 className="font-heading font-black text-2xl text-white">Oficina Reis</h1>
-                  <p className="text-slate-300 text-xs">Retificação de Motores</p>
+                  <p className="text-[#f59e0b] text-xs font-medium">Retificação de Motores</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <Link 
-                  to="/consulta-os"
-                  className="px-4 py-2 border border-white/30 text-white rounded-md hover:bg-white/10 transition-colors text-sm"
+                  to="/area-cliente"
+                  className="px-4 py-2 border border-[#f59e0b]/50 text-[#f59e0b] rounded-md hover:bg-[#f59e0b]/10 transition-colors text-sm"
                 >
                   Consultar OS
                 </Link>
                 <Link 
                   to="/login"
-                  className="px-4 py-2 bg-[#f97316] text-white rounded-md hover:bg-[#ea580c] transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-[#f59e0b] text-[#1e3a5f] rounded-md hover:bg-[#d97706] transition-colors text-sm font-bold"
                 >
                   Área do Cliente
                 </Link>
@@ -56,7 +57,7 @@ const Institucional = () => {
             <div className="text-center px-4 max-w-4xl">
               <h2 className="font-heading font-black text-5xl md:text-7xl text-white mb-6 leading-tight">
                 Precisão em cada detalhe,<br />
-                <span className="text-[#f97316]">confiança em cada motor.</span>
+                <span className="text-[#f59e0b]">confiança em cada motor.</span>
               </h2>
               <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
                 Desde 1997 oferecendo excelência em retificação de motores e usinagem de precisão no Recôncavo Baiano.
