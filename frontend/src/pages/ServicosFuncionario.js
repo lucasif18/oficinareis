@@ -366,14 +366,32 @@ const ServicosFuncionario = () => {
                               </button>
                             )}
                             {servico.status === 'em_andamento' && isMeuServico && (
-                              <button
-                                onClick={() => concluirServico(servico.id)}
-                                className="px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors flex items-center gap-1"
-                                data-testid={`concluir-servico-${servico.id}`}
-                              >
-                                <CheckCircle className="w-3 h-3" />
-                                Concluir
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => openFotoModal(servico, 'antes')}
+                                  className="px-2 py-1.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200 transition-colors flex items-center gap-1"
+                                  title="Foto Antes"
+                                >
+                                  <Camera className="w-3 h-3" />
+                                  Antes
+                                </button>
+                                <button
+                                  onClick={() => openFotoModal(servico, 'depois')}
+                                  className="px-2 py-1.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 transition-colors flex items-center gap-1"
+                                  title="Foto Depois"
+                                >
+                                  <Camera className="w-3 h-3" />
+                                  Depois
+                                </button>
+                                <button
+                                  onClick={() => concluirServico(servico.id)}
+                                  className="px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                  data-testid={`concluir-servico-${servico.id}`}
+                                >
+                                  <CheckCircle className="w-3 h-3" />
+                                  Concluir
+                                </button>
+                              </>
                             )}
                             {servico.status === 'concluido' && (
                               <span className="text-xs text-slate-500 flex items-center gap-1">
