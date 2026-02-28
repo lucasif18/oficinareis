@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   LayoutDashboard, Users, Package, FileText, FileCheck,
   Truck, UserCog, DollarSign, BarChart3, LogOut, Menu, X,
-  Wrench, Receipt, Settings, Eye
+  Wrench, Receipt, Settings, Eye, Shield
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -32,6 +32,7 @@ const Layout = ({ children }) => {
     { path: '/orcamentos', icon: FileCheck, label: 'Orçamentos', roles: ['admin', 'motorista'] },
     { path: '/romaneio', icon: Truck, label: 'Romaneio', roles: ['admin', 'motorista'] },
     { path: '/funcionarios', icon: UserCog, label: 'Funcionários', roles: ['admin'] },
+    { path: '/usuarios', icon: Shield, label: 'Usuários', roles: ['admin'] },
     { path: '/motoristas', icon: Truck, label: 'Motoristas', roles: ['admin'] },
     { path: '/tabela-precos', icon: DollarSign, label: 'Tabela de Preços', roles: ['admin'] },
     { path: '/financeiro', icon: DollarSign, label: 'Financeiro', roles: ['admin'] },
