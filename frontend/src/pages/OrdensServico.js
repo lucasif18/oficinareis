@@ -172,7 +172,7 @@ const OrdensServico = () => {
                       {canSeeValues && (
                         <td className="px-4 py-3 text-right">
                           <span className="font-mono text-sm font-bold text-slate-900">
-                            R$ {os.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            R$ {(os.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </td>
                       )}
