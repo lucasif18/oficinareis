@@ -393,6 +393,39 @@ async def create_usuario(data: UsuarioCreate, current_user: dict = Depends(requi
         }
         await db.funcionarios.insert_one(funcionario)
     
+    # Se for motorista, criar registro na tabela motoristas
+    if data.role == "motorista":
+        motorista = {
+            "id": str(uuid.uuid4()),
+            "nome": data.nome,
+            "cpf": "",
+            "telefone": "",
+            "cnh": "",
+            "veiculo_modelo": None,
+            "veiculo_placa": None,
+            "user_id": user_id,
+            "ativo": True,
+            "criado_em": datetime.now(timezone.utc).isoformat()
+        }
+        await db.motoristas.insert_one(motorista)
+    
+    # Se for cliente, criar registro na tabela clientes
+    if data.role == "cliente":
+        cliente = {
+            "id": str(uuid.uuid4()),
+            "tipo": "PF",
+            "nome": data.nome,
+            "cpf_cnpj": "",
+            "telefone": "",
+            "email": data.email,
+            "endereco": "",
+            "user_id": user_id,
+            "criado_em": datetime.now(timezone.utc).isoformat()
+        }
+        await db.clientes.insert_one(cliente)
+        # Atualizar o user com o cliente_id
+        await db.users.update_one({"id": user_id}, {"$set": {"cliente_id": cliente["id"]}})
+    
     return {"id": user_id, "nome": data.nome, "email": data.email, "role": data.role}
 
 @api_router.put("/usuarios/{user_id}")
