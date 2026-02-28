@@ -254,9 +254,7 @@ const ContasReceber = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Descrição</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Vencimento</th>
-                  {!isMotorista && (
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Valor</th>
-                  )}
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Valor</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Ações</th>
                 </tr>
@@ -264,7 +262,7 @@ const ContasReceber = () => {
               <tbody className="divide-y divide-slate-100">
                 {contas.length === 0 ? (
                   <tr>
-                    <td colSpan={isMotorista ? "5" : "6"} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
                       Nenhuma conta a receber encontrada
                     </td>
                   </tr>
@@ -294,13 +292,11 @@ const ContasReceber = () => {
                           {new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}
                         </div>
                       </td>
-                      {!isMotorista && (
-                        <td className="px-4 py-3 text-right">
-                          <span className="font-mono text-sm font-bold text-slate-900">
-                            R$ {conta.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </td>
-                      )}
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-mono text-sm font-bold text-slate-900">
+                          R$ {(conta.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         {getStatusBadge(conta.status)}
                       </td>
