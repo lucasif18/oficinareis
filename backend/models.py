@@ -104,9 +104,12 @@ class Funcionario(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     nome: str
-    cpf: str
-    telefone: str
+    cpf: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[str] = None
+    especialidade: Optional[str] = "Geral"
     especialidades: List[str] = []  # ['Virabrequim', 'Bloco', 'Bielas', etc]
+    user_id: Optional[str] = None  # Link com o usuário
     ativo: bool = True
     criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
