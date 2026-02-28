@@ -1,9 +1,15 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Play, CheckCircle, Clock, AlertCircle, Filter, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Play, CheckCircle, Clock, AlertCircle, Filter, RefreshCw, Wifi, WifiOff, Camera, Upload, X, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
