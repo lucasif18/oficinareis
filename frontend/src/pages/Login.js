@@ -40,7 +40,7 @@ const Login = () => {
           navigate('/dashboard-funcionario');
           break;
         case 'cliente':
-          navigate('/area-cliente');
+          navigate('/dashboard-cliente');
           break;
         default:
           navigate('/dashboard');
