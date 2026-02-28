@@ -197,7 +197,7 @@ const ViewOS = () => {
             </Button>
           )}
           {/* Botão Upload de Fotos (apenas ADM) */}
-          {isAdmin && (
+          {canUploadPhotos && (
             <Button
               onClick={() => setShowUploadModal(true)}
               variant="outline"
@@ -291,7 +291,7 @@ const ViewOS = () => {
                           alt="Antes"
                           className="w-full h-32 object-cover rounded-lg border border-slate-200"
                         />
-                        {isAdmin && (
+                        {canUploadPhotos && (
                           <button
                             onClick={() => handleDeleteFoto(foto.id)}
                             className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -324,7 +324,7 @@ const ViewOS = () => {
                           alt="Depois"
                           className="w-full h-32 object-cover rounded-lg border border-slate-200"
                         />
-                        {isAdmin && (
+                        {canUploadPhotos && (
                           <button
                             onClick={() => handleDeleteFoto(foto.id)}
                             className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
