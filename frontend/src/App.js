@@ -63,7 +63,21 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return user ? <Navigate to="/dashboard" /> : children;
+  // Se já está logado, redirecionar baseado no role
+  if (user) {
+    switch(user.role) {
+      case 'motorista':
+        return <Navigate to="/dashboard-motorista" />;
+      case 'funcionario':
+        return <Navigate to="/dashboard-funcionario" />;
+      case 'cliente':
+        return <Navigate to="/dashboard-cliente" />;
+      default:
+        return <Navigate to="/dashboard" />;
+    }
+  }
+  
+  return children;
 };
 
 function App() {
