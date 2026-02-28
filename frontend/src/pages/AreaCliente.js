@@ -437,7 +437,7 @@ const AreaCliente = () => {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-sm text-slate-900 text-right font-mono">
-                                  R$ {servico.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  R$ {(servico.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </td>
                               </tr>
                             ))}
