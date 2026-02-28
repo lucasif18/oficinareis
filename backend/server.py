@@ -316,6 +316,130 @@ async def reset_password(data: ResetPasswordRequest):
     
     return {"message": "Senha alterada com sucesso"}
 
+# ========== GESTÃO DE USUÁRIOS (ADM) ==========
+class UsuarioCreate(PydanticBaseModel):
+    nome: str
+    email: str
+    senha: str
+    role: str = "funcionario"
+    ativo: bool = True
+
+class UsuarioUpdate(PydanticBaseModel):
+    nome: str
+    email: str
+    senha: Optional[str] = None
+    role: str
+    ativo: bool = True
+
+@api_router.get("/usuarios")
+async def list_usuarios(current_user: dict = Depends(require_role(["admin"]))):
+    """Lista todos os usuários do sistema"""
+    users = await db.users.find({}, {"_id": 0, "senha_hash": 0}).sort("nome", 1).to_list(100)
+    return users
+
+@api_router.post("/usuarios")
+async def create_usuario(data: UsuarioCreate, current_user: dict = Depends(require_role(["admin"]))):
+    """Cria um novo usuário"""
+    # Verificar se email já existe
+    existing = await db.users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+    
+    user_id = str(uuid.uuid4())
+    user = {
+        "id": user_id,
+        "nome": data.nome,
+        "email": data.email,
+        "senha_hash": hash_password(data.senha),
+        "role": data.role,
+        "ativo": data.ativo,
+        "criado_em": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(user)
+    
+    # Se for funcionário, criar registro na tabela funcionarios
+    if data.role == "funcionario":
+        funcionario = {
+            "id": str(uuid.uuid4()),
+            "nome": data.nome,
+            "cpf": "",
+            "telefone": "",
+            "email": data.email,
+            "especialidade": "Geral",
+            "especialidades": [],
+            "user_id": user_id,
+            "ativo": True,
+            "criado_em": datetime.now(timezone.utc).isoformat()
+        }
+        await db.funcionarios.insert_one(funcionario)
+    
+    return {"id": user_id, "nome": data.nome, "email": data.email, "role": data.role}
+
+@api_router.put("/usuarios/{user_id}")
+async def update_usuario(user_id: str, data: UsuarioUpdate, current_user: dict = Depends(require_role(["admin"]))):
+    """Atualiza um usuário existente"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Verificar se está tentando alterar o email para um já existente
+    if data.email != user.get("email"):
+        existing = await db.users.find_one({"email": data.email})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email já cadastrado")
+    
+    update_data = {
+        "nome": data.nome,
+        "email": data.email,
+        "role": data.role,
+        "ativo": data.ativo
+    }
+    
+    # Atualizar senha apenas se fornecida
+    if data.senha:
+        update_data["senha_hash"] = hash_password(data.senha)
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    # Atualizar nome no funcionario se existir
+    await db.funcionarios.update_one(
+        {"user_id": user_id},
+        {"$set": {"nome": data.nome, "email": data.email}}
+    )
+    
+    return {"id": user_id, "nome": data.nome, "email": data.email, "role": data.role, "ativo": data.ativo}
+
+@api_router.delete("/usuarios/{user_id}")
+async def delete_usuario(user_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    """Exclui um usuário"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Não permitir excluir o admin principal
+    if user.get("email") == "admin@oficinareis.com":
+        raise HTTPException(status_code=400, detail="Não é possível excluir o administrador principal")
+    
+    await db.users.delete_one({"id": user_id})
+    
+    # Remover funcionário vinculado se existir
+    await db.funcionarios.delete_one({"user_id": user_id})
+    
+    return {"message": "Usuário excluído com sucesso"}
+
+@api_router.patch("/usuarios/{user_id}/toggle-ativo")
+async def toggle_usuario_ativo(user_id: str, current_user: dict = Depends(require_role(["admin"]))):
+    """Ativa/desativa um usuário"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    novo_status = not user.get("ativo", True)
+    await db.users.update_one({"id": user_id}, {"$set": {"ativo": novo_status}})
+    
+    return {"id": user_id, "ativo": novo_status}
+
 # ========== CONSULTA PÚBLICA DE OS (PARA CLIENTES) ==========
 @api_router.get("/consulta-os/{numero_fisico}")
 async def consulta_os_publica(numero_fisico: str):
