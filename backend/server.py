@@ -1203,8 +1203,8 @@ class FotoUpload(PydanticBaseModel):
     descricao: Optional[str] = None
 
 @api_router.post("/ordens-servico/{os_id}/fotos")
-async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depends(require_role(["admin"]))):
-    """Upload de foto da OS - Apenas ADM pode fazer upload"""
+async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    """Upload de foto da OS - ADM e Funcionário podem fazer upload"""
     os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
     if not os:
         raise HTTPException(status_code=404, detail="OS não encontrada")
@@ -1219,7 +1219,7 @@ async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depe
         "url": data.imagem_base64,  # Base64 string
         "descricao": data.descricao,
         "data_upload": datetime.now(timezone.utc).isoformat(),
-        "upload_por": current_user.get('nome', 'Admin')
+        "upload_por": current_user.get('nome', 'Usuário')
     }
     
     # Adicionar ao array de fotos
@@ -1234,8 +1234,8 @@ async def upload_foto_os(os_id: str, data: FotoUpload, current_user: dict = Depe
     return {"message": "Foto adicionada com sucesso", "foto_id": foto["id"]}
 
 @api_router.delete("/ordens-servico/{os_id}/fotos/{foto_id}")
-async def delete_foto_os(os_id: str, foto_id: str, current_user: dict = Depends(require_role(["admin"]))):
-    """Remove foto da OS - Apenas ADM"""
+async def delete_foto_os(os_id: str, foto_id: str, current_user: dict = Depends(require_role(["admin", "funcionario"]))):
+    """Remove foto da OS - ADM e Funcionário podem remover"""
     os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
     if not os:
         raise HTTPException(status_code=404, detail="OS não encontrada")
