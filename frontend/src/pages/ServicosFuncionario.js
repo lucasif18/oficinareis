@@ -22,6 +22,13 @@ const ServicosFuncionario = () => {
   const [wsConnected, setWsConnected] = useState(false);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  
+  // Estado para upload de fotos
+  const [showFotoModal, setShowFotoModal] = useState(false);
+  const [selectedServico, setSelectedServico] = useState(null);
+  const [fotoTipo, setFotoTipo] = useState('antes');
+  const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const fetchServicos = useCallback(async () => {
     try {
