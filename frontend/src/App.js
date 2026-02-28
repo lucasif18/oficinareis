@@ -186,6 +186,12 @@ function App() {
             </PrivateRoute>
           } />
           
+          <Route path="/usuarios" element={
+            <PrivateRoute>
+              <Usuarios />
+            </PrivateRoute>
+          } />
+          
           <Route path="/motoristas" element={
             <PrivateRoute>
               <Motoristas />
