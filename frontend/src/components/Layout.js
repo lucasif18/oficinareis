@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   LayoutDashboard, Users, Package, FileText, FileCheck,
   Truck, UserCog, DollarSign, BarChart3, LogOut, Menu, X,
-  Wrench, Receipt, Settings
+  Wrench, Receipt, Settings, Eye
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -17,11 +17,13 @@ const Layout = ({ children }) => {
   // admin: acesso total
   // motorista: Dashboard do Motorista, Romaneio, Clientes, Peças, OS, Orçamento, Contas a Receber
   // funcionario: Dashboard restrito, Serviços (filtrado por setor), Peças (sem preços)
-  // cliente: redirecionado para consulta de OS
+  // cliente: Dashboard do Cliente, Minhas OS
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
     { path: '/dashboard-funcionario', icon: LayoutDashboard, label: 'Dashboard', roles: ['funcionario'] },
     { path: '/dashboard-motorista', icon: LayoutDashboard, label: 'Dashboard', roles: ['motorista'] },
+    { path: '/dashboard-cliente', icon: LayoutDashboard, label: 'Meu Painel', roles: ['cliente'] },
+    { path: '/minhas-os', icon: Eye, label: 'Minhas OS', roles: ['cliente'] },
     { path: '/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'motorista'] },
     { path: '/pecas', icon: Package, label: 'Peças', roles: ['admin', 'motorista'] },
     { path: '/pecas-consulta', icon: Package, label: 'Estoque', roles: ['funcionario'] },
