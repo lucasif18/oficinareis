@@ -483,7 +483,7 @@ const AreaCliente = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-white font-bold text-xl">VALOR TOTAL</span>
                         <span className="text-white font-black text-3xl font-mono">
-                          R$ {os.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {(os.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     </div>
