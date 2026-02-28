@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     localStorage.setItem('token', access_token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+    return userData; // Retornar userData para o componente de login
   };
 
   const logout = () => {
