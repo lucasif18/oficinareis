@@ -58,6 +58,10 @@ const Funcionarios = () => {
       if (editingFuncionario) {
         await axios.put(`${API_URL}/api/funcionarios/${editingFuncionario.id}`, formData);
         toast.success('Funcionário atualizado com sucesso!');
+        // Aviso sobre especialidades
+        if (formData.especialidades.length > 0) {
+          toast.info('Os novos setores já estão ativos. O funcionário verá os serviços ao acessar a página de Serviços.', { duration: 5000 });
+        }
       } else {
         await axios.post(`${API_URL}/api/funcionarios`, formData);
         toast.success('Funcionário cadastrado com sucesso!');
