@@ -88,7 +88,7 @@ const Institucional = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <span className="inline-block px-4 py-1 bg-[#f97316]/10 text-[#f97316] rounded-full text-sm font-medium mb-4">
+              <span className="inline-block px-4 py-1 bg-[#f59e0b]/10 text-[#f59e0b] rounded-full text-sm font-medium mb-4">
                 Nossa História
               </span>
               <h2 className="font-heading font-black text-4xl text-[#1e3a5f] mb-6">
@@ -112,7 +112,7 @@ const Institucional = () => {
                 alt="Oficina Reis" 
                 className="rounded-lg shadow-xl w-full"
               />
-              <div className="absolute -bottom-6 -right-6 bg-[#f97316] text-white p-6 rounded-lg shadow-lg">
+              <div className="absolute -bottom-6 -right-6 bg-[#f59e0b] text-white p-6 rounded-lg shadow-lg">
                 <div className="font-heading font-black text-4xl">+27</div>
                 <div className="text-sm">anos de experiência</div>
               </div>
@@ -125,7 +125,7 @@ const Institucional = () => {
       <section className="py-20 bg-[#1e3a5f]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1 bg-white/10 text-[#f97316] rounded-full text-sm font-medium mb-4">
+            <span className="inline-block px-4 py-1 bg-white/10 text-[#f59e0b] rounded-full text-sm font-medium mb-4">
               Nossos Serviços
             </span>
             <h2 className="font-heading font-black text-4xl text-white mb-4">
@@ -139,7 +139,7 @@ const Institucional = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Retífica de Motores */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 hover:bg-white/20 transition-colors group">
-              <div className="w-14 h-14 bg-[#f97316] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-[#f59e0b] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Settings className="w-7 h-7 text-white" />
               </div>
               <h3 className="font-heading font-bold text-xl text-white mb-3">Retífica de Motores</h3>
@@ -150,7 +150,7 @@ const Institucional = () => {
 
             {/* Tornearia e Usinagem */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 hover:bg-white/20 transition-colors group">
-              <div className="w-14 h-14 bg-[#f97316] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-[#f59e0b] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Cog className="w-7 h-7 text-white" />
               </div>
               <h3 className="font-heading font-bold text-xl text-white mb-3">Tornearia e Usinagem</h3>
@@ -161,7 +161,7 @@ const Institucional = () => {
 
             {/* Serviços de Jantes */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 hover:bg-white/20 transition-colors group">
-              <div className="w-14 h-14 bg-[#f97316] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-[#f59e0b] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Disc className="w-7 h-7 text-white" />
               </div>
               <h3 className="font-heading font-bold text-xl text-white mb-3">Serviços de Jantes</h3>
@@ -172,7 +172,7 @@ const Institucional = () => {
 
             {/* Soldas em Geral */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 hover:bg-white/20 transition-colors group">
-              <div className="w-14 h-14 bg-[#f97316] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-[#f59e0b] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Flame className="w-7 h-7 text-white" />
               </div>
               <h3 className="font-heading font-bold text-xl text-white mb-3">Soldas em Geral</h3>
@@ -188,7 +188,7 @@ const Institucional = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1 bg-[#f97316]/10 text-[#f97316] rounded-full text-sm font-medium mb-4">
+            <span className="inline-block px-4 py-1 bg-[#f59e0b]/10 text-[#f59e0b] rounded-full text-sm font-medium mb-4">
               Nosso Trabalho
             </span>
             <h2 className="font-heading font-black text-4xl text-[#1e3a5f] mb-4">
@@ -260,7 +260,7 @@ const Institucional = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#f97316]">
+      <section className="py-20 bg-[#f59e0b]">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="font-heading font-black text-4xl text-white mb-4">
             Precisa de um orçamento?
@@ -286,7 +286,7 @@ const Institucional = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-[#f97316] rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#f59e0b] rounded-lg flex items-center justify-center">
                   <Wrench className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -301,7 +301,7 @@ const Institucional = () => {
             </div>
             <div>
               <h4 className="font-bold mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-[#f97316]" />
+                <MapPin className="w-5 h-5 text-[#f59e0b]" />
                 Localização
               </h4>
               <p className="text-slate-400 text-sm">
@@ -312,7 +312,7 @@ const Institucional = () => {
             </div>
             <div>
               <h4 className="font-bold mb-4 flex items-center gap-2">
-                <Phone className="w-5 h-5 text-[#f97316]" />
+                <Phone className="w-5 h-5 text-[#f59e0b]" />
                 Contato
               </h4>
               <p className="text-slate-400 text-sm">
