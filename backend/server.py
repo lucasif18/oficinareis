@@ -198,6 +198,8 @@ async def cadastro_publico(data: UserRegister):
         
         if existing_cliente:
             cliente_id = existing_cliente["id"]
+            # Vincular o user_id ao cliente existente
+            await db.clientes.update_one({"id": cliente_id}, {"$set": {"user_id": None}})  # Será atualizado depois
         else:
             # Criar novo cliente
             tipo = "PJ" if len(cpf_cnpj_limpo) == 14 else "PF"
@@ -224,6 +226,10 @@ async def cadastro_publico(data: UserRegister):
     doc = user.model_dump()
     doc['criado_em'] = doc['criado_em'].isoformat()
     await db.users.insert_one(doc)
+    
+    # Se for cliente, vincular o user_id ao registro de cliente
+    if data.role == "cliente" and cliente_id:
+        await db.clientes.update_one({"id": cliente_id}, {"$set": {"user_id": user.id}})
     
     # Se for funcionário, criar também registro na tabela de funcionários
     if data.role == "funcionario":
